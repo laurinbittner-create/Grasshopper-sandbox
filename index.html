@@ -37,13 +37,6 @@
     </div>
 </header>
 
-   <!-- In deiner Kopfzeile / Toolbar (z.B. neben dem Reset-Button): -->
-    <div class="flex items-center gap-2">
-        <button onclick="zoomOut()" class="px-2 py-1 bg-zinc-700 text-white rounded text-xs">-</button>
-        <span id="zoomLevel" class="text-xs text-zinc-300">100%</span>
-        <button onclick="zoomIn()" class="px-2 py-1 bg-zinc-700 text-white rounded text-xs">+</button>
-    </div>
-
     <!-- Der Haupt-Workspace und der Skalierungs-Container: -->
     <main id="canvasWorkspace" class="flex-1 relative overflow-auto w-full h-[100dvh] bg-[#e5e5e5]">
         <div id="canvasInner" class="relative w-[3000px] h-[3000px] origin-top-left transition-transform duration-75">
