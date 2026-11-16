@@ -309,7 +309,7 @@ function renderCanvas() {
 
         window.addEventListener('touchend', () => { isDragging = false; });
 
-        canvasWorkspace.appendChild(nodeCard);
+        nodesContainer.appendChild(nodeCard); //
     });
 
     document.querySelectorAll('.pin').forEach(pinElement => {
