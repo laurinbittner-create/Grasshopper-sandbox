@@ -420,35 +420,51 @@ window.updateSliderBounds = function(nodeIndex, boundType, val) {
     renderCanvas();
 };
 
-let scale = 1;
-const minScale = 0.3; // Bis zu 30% rauszoomen
-const maxScale = 2.0; // Bis zu 200% reinzoomen
+document.addEventListener('DOMContentLoaded', () => {
+    let scale = 1;
+    const minScale = 0.3; // Bis zu 30% rauszoomen
+    const maxScale = 2.0; // Bis zu 200% reinzoomen
 
-function updateZoom() {
-    const inner = document.getElementById('canvasInner');
-    const zoomLevel = document.getElementById('zoomLevel');
-    if (inner) {
-        inner.style.transform = `scale(${scale})`;
+    function updateZoom() {
+        const inner = document.getElementById('canvasInner');
+        const zoomLevel = document.getElementById('zoomLevel');
+        if (inner) {
+            inner.style.transform = `scale(${scale})`;
+            inner.style.transformOrigin = 'top left'; // Hält den Anker stabil
+        }
+        if (zoomLevel) {
+            zoomLevel.innerText = `${Math.round(scale * 100)}%`;
+        }
     }
-    if (zoomLevel) {
-        zoomLevel.innerText = `${Math.round(scale * 100)}%`;
-    }
-}
 
-function zoomIn() {
-    if (scale < maxScale) {
-        scale += 0.1;
-        updateZoom();
+    function zoomIn(e) {
+        if (e) e.preventDefault();
+        if (scale < maxScale) {
+            scale += 0.1;
+            updateZoom();
+        }
     }
-}
 
-function zoomOut() {
-    if (scale > minScale) {
-        scale -= 0.1;
-        updateZoom();
+    function zoomOut(e) {
+        if (e) e.preventDefault();
+        if (scale > minScale) {
+            scale -= 0.1;
+            updateZoom();
+        }
     }
-}
 
-// Event-Listener verknüpfen
-document.getElementById('zoomInBtn')?.addEventListener('click', zoomIn);
-document.getElementById('zoomOutBtn')?.addEventListener('click', zoomOut);
+    // Buttons abgreifen und sicher mit Event-Listenern versehen (für Touch & Klick)
+    const btnIn = document.getElementById('zoomInBtn');
+    const btnOut = document.getElementById('zoomOutBtn');
+
+    if (btnIn) {
+        btnIn.addEventListener('click', zoomIn);
+        btnIn.addEventListener('touchend', zoomIn); // Speziell für flinke Handy-Finger
+    }
+    if (btnOut) {
+        btnOut.addEventListener('click', zoomOut);
+        btnOut.addEventListener('touchend', zoomOut); // Speziell für flinke Handy-Finger
+    }
+
+    updateZoom();
+});
