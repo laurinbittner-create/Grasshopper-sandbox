@@ -11,26 +11,31 @@
 </head>
 <body class="gh-canvas text-slate-100 h-screen overflow-hidden flex flex-col font-mono select-none">
 
-    <!-- Top Toolbar -->
-    <header class="bg-zinc-900/90 backdrop-blur border-b border-zinc-800 px-6 py-3 flex justify-between items-center z-30 shadow-lg">
-        <div class="flex items-center gap-4">
-            <h1 class="text-sm font-bold text-amber-500 tracking-wider">RHINO // MODULAR CANVAS</h1>
-            <span class="text-xs text-zinc-500">|</span>
-            <span class="text-xs text-zinc-400">Aktive Kabel: <strong id="connectionCount" class="text-amber-400">0</strong></span>
-        </div>
+   <!-- Top Toolbar -->
+<header class="bg-zinc-900/90 backdrop-blur border-b border-zinc-800 px-4 py-3 flex items-center justify-between overflow-x-auto flex-nowrap shrink-0 gap-4">
+    <div class="flex items-center gap-4 shrink-0">
+        <h1 class="text-sm font-bold text-amber-500 tracking-wider">RHINO // MODULAR CANVAS</h1>
+        <span class="text-xs text-zinc-500">|</span>
+        <span class="text-xs text-zinc-400">Aktive Kabel: <strong id="connectionCount" class="text-white">0</strong></span>
+    </div>
 
-        <div class="flex items-center gap-2">
-            <select id="componentSelect" class="bg-zinc-950 border border-zinc-700 text-xs text-zinc-200 rounded px-3 py-1.5 focus:outline-none focus:border-amber-500">
-                <option value="" disabled selected>+ Komponente hinzufügen...</option>
-            </select>
-            <button id="addBtn" class="bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold text-xs px-4 py-1.5 rounded transition-all">
-                Platzieren
-            </button>
-            <button id="clearBtn" class="bg-zinc-800 hover:bg-rose-900/50 hover:text-rose-300 text-zinc-300 text-xs px-3 py-1.5 rounded transition-all ml-4">
-                Reset
-            </button>
-        </div>
-    </header>
+    <div class="flex items-center gap-2 shrink-0">
+        <!-- Zoom Controls -->
+        <button onclick="zoomOut()" class="px-2 py-1 bg-zinc-800 text-white rounded text-xs hover:bg-zinc-700">-</button>
+        <span id="zoomLevel" class="text-xs text-zinc-300 min-w-[36px] text-center">100%</span>
+        <button onclick="zoomIn()" class="px-2 py-1 bg-zinc-800 text-white rounded text-xs hover:bg-zinc-700">+</button>
+
+        <select id="componentSelect" class="bg-zinc-950 border border-zinc-700 text-xs text-zinc-200 px-2.5 py-1.5 rounded focus:outline-none focus:border-amber-500">
+            <option value="" disabled selected>+ Komponente hinzufügen...</option>
+        </select>
+        <button id="addBtn" class="bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs transition">
+            Platzieren
+        </button>
+        <button id="clearBtn" class="bg-zinc-800 hover:bg-rose-900/50 hover:text-rose-200 text-zinc-300 font-semibold px-3 py-1.5 rounded text-xs transition">
+            Reset
+        </button>
+    </div>
+</header>
 
    <!-- In deiner Kopfzeile / Toolbar (z.B. neben dem Reset-Button): -->
     <div class="flex items-center gap-2">
