@@ -394,10 +394,14 @@ addBtn.addEventListener('click', () => {
     if (!selectedId) return;
     const bausteinObjekt = bausteinBibliothek.find(b => b.id === selectedId);
     if (bausteinObjekt) {
+        // Berechnet den aktuellen sichtbaren Bereich (inkl. Zoom & Scrollen)
+        const viewX = canvasWorkspace.scrollLeft / scale + 50;
+        const viewY = canvasWorkspace.scrollTop / scale + 50;
+
         aktiveCanvasNodes.push({
             ...bausteinObjekt,
-            x: 60 + (aktiveCanvasNodes.length * 40) % 350,
-            y: 60 + (aktiveCanvasNodes.length * 40) % 250
+            x: viewX + (aktiveCanvasNodes.length * 30) % 300,
+            y: viewY + (aktiveCanvasNodes.length * 30) % 200
         });
         renderCanvas();
     }
