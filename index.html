@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grasshopper Sandbox - Modular</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Externe CSS Datei -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="gh-canvas text-slate-100 h-screen overflow-hidden flex flex-col font-mono select-none">
+
+    <!-- Top Toolbar -->
+    <header class="bg-zinc-900/90 backdrop-blur border-b border-zinc-800 px-6 py-3 flex justify-between items-center z-30 shadow-lg">
+        <div class="flex items-center gap-4">
+            <h1 class="text-sm font-bold text-amber-500 tracking-wider">RHINO // MODULAR CANVAS</h1>
+            <span class="text-xs text-zinc-500">|</span>
+            <span class="text-xs text-zinc-400">Aktive Kabel: <strong id="connectionCount" class="text-amber-400">0</strong></span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <select id="componentSelect" class="bg-zinc-950 border border-zinc-700 text-xs text-zinc-200 rounded px-3 py-1.5 focus:outline-none focus:border-amber-500">
+                <option value="" disabled selected>+ Komponente hinzufügen...</option>
+            </select>
+            <button id="addBtn" class="bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold text-xs px-4 py-1.5 rounded transition-all">
+                Platzieren
+            </button>
+            <button id="clearBtn" class="bg-zinc-800 hover:bg-rose-900/50 hover:text-rose-300 text-zinc-300 text-xs px-3 py-1.5 rounded transition-all ml-4">
+                Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- Der Canvas -->
+    <main id="canvasWorkspace" class="flex-1 relative overflow-auto w-full h-full">
+    <!-- Das unendliche Canvas mit festen Mindestmaßen gegen das Zusammenschrumpfen -->
+    <svg id="wireCanvas" style="width: 3000px; height: 3000px; min-width: 3000px; min-height: 3000px;" class="absolute top-0 left-0">
+        <g id="wiresGroup"></g>
+    </svg>
+</main>
+
+        <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-zinc-600 z-0">
+            <p class="text-sm tracking-widest uppercase">Canvas ist leer</p>
+            <p class="text-xs mt-1">Modular aufgeteilt – bereit für deine Erweiterungen.</p>
+        </div>
+    </main>
+
+    <!-- Externe JavaScript Datei -->
+    <script src="app.js?v=4.0"></script>
+</body>
+</html>
