@@ -267,16 +267,16 @@ function renderCanvas() {
 
         function startDrag(clientX, clientY) {
             isDragging = true;
-            startX = clientX - b.x;
-            startY = clientY - b.y;
+            startX = clientX - (b.x * scale);
+            startY = clientY - (b.y * scale);
             nodeCard.style.zIndex = 100;
             document.querySelectorAll('.draggable-node').forEach(n => { if (n !== nodeCard) n.style.zIndex = 10; });
         }
 
         function onMove(clientX, clientY) {
             if (!isDragging) return;
-            b.x = clientX - startX;
-            b.y = clientY - startY;
+            b.x = (clientX - startX) / scale;
+            b.y = (clientY - startY) / scale;
             nodeCard.style.left = b.x + 'px';
             nodeCard.style.top = b.y + 'px';
             drawWires();
@@ -333,10 +333,10 @@ function drawWires() {
             const fromRect = fromPinEl.getBoundingClientRect();
             const toRect = toPinEl.getBoundingClientRect();
 
-            const x1 = fromRect.left + fromRect.width / 2 - canvasRect.left + canvasWorkspace.scrollLeft;
-            const y1 = fromRect.top + fromRect.height / 2 - canvasRect.top + canvasWorkspace.scrollTop;
-            const x2 = toRect.left + toRect.width / 2 - canvasRect.left + canvasWorkspace.scrollLeft;
-            const y2 = toRect.top + toRect.height / 2 - canvasRect.top + canvasWorkspace.scrollTop;
+            const x1 = (fromRect.left + fromRect.width / 2 - canvasRect.left + canvasWorkspace.scrollLeft) / scale;
+            const y1 = (fromRect.top + fromRect.height / 2 - canvasRect.top + canvasWorkspace.scrollTop) / scale;
+            const x2 = (toRect.left + toRect.width / 2 - canvasRect.left + canvasWorkspace.scrollLeft) / scale;
+            const y2 = (toRect.top + toRect.height / 2 - canvasRect.top + canvasWorkspace.scrollTop) / scale;
 
             const dx = Math.abs(x2 - x1) * 0.5;
             const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
