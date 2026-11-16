@@ -419,3 +419,32 @@ window.updateSliderBounds = function(nodeIndex, boundType, val) {
     }
     renderCanvas();
 };
+
+let scale = 1;
+const minScale = 0.3; // Bis zu 30% rauszoomen
+const maxScale = 2.0; // Bis zu 200% reinzoomen
+
+function updateZoom() {
+    const inner = document.getElementById('canvasInner');
+    const zoomLabel = document.getElementById('zoomLevel');
+    if (inner) {
+        inner.style.transform = `scale(${scale})`;
+    }
+    if (zoomLabel) {
+        zoomLabel.innerText = `${Math.round(scale * 100)}%`;
+    }
+}
+
+function zoomIn() {
+    if (scale < maxScale) {
+        scale += 0.1;
+        updateZoom();
+    }
+}
+
+function zoomOut() {
+    if (scale > minScale) {
+        scale -= 0.1;
+        updateZoom();
+    }
+}
