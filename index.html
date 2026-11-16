@@ -32,13 +32,25 @@
         </div>
     </header>
 
-    <!-- Der Canvas -->
-    <main id="canvasWorkspace" class="flex-1 relative overflow-auto w-full h-full">
-    <!-- Das unendliche Canvas mit festen Mindestmaßen gegen das Zusammenschrumpfen -->
-    <svg id="wireCanvas" style="width: 3000px; height: 3000px; min-width: 3000px; min-height: 3000px;" class="absolute top-0 left-0">
-        <g id="wiresGroup"></g>
-    </svg>
-</main>
+   <!-- In deiner Kopfzeile / Toolbar (z.B. neben dem Reset-Button): -->
+    <div class="flex items-center gap-2">
+        <button onclick="zoomOut()" class="px-2 py-1 bg-zinc-700 text-white rounded text-xs">-</button>
+        <span id="zoomLevel" class="text-xs text-zinc-300">100%</span>
+        <button onclick="zoomIn()" class="px-2 py-1 bg-zinc-700 text-white rounded text-xs">+</button>
+    </div>
+
+    <!-- Der Haupt-Workspace und der Skalierungs-Container: -->
+    <main id="canvasWorkspace" class="flex-1 relative overflow-auto w-full h-[100dvh] bg-[#e5e5e5]">
+        <div id="canvasInner" class="relative w-[3000px] h-[3000px] origin-top-left transition-transform duration-75">
+            <!-- Das SVG für Kabel -->
+            <svg id="wireCanvas" class="absolute top-0 left-0 w-full h-full pointer-events-none">
+                <g id="wiresGroup"></g>
+            </svg>
+            
+            <!-- Container für deine platzierten Bausteine -->
+            <div id="nodesContainer" class="absolute top-0 left-0 w-full h-full"></div>
+        </div>
+    </main>
 
         <div id="emptyState" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-zinc-600 z-0">
             <p class="text-sm tracking-widest uppercase">Canvas ist leer</p>
