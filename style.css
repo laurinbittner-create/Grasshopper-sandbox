@@ -76,3 +76,7 @@ optgroup {
 option {
     font-size: 13px;
 }
+button, select {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
