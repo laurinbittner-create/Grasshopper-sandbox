@@ -21,9 +21,9 @@
 
     <div class="flex items-center gap-2 shrink-0">
         <!-- Zoom Controls -->
-        <button onclick="zoomOut()" class="px-2 py-1 bg-zinc-800 text-white rounded text-xs hover:bg-zinc-700">-</button>
+        <button id="zoomOutBtn" class="px-2 py-1 bg-zinc-800 text-white rounded text-xs hover:bg-zinc-700">-</button>
         <span id="zoomLevel" class="text-xs text-zinc-300 min-w-[36px] text-center">100%</span>
-        <button onclick="zoomIn()" class="px-2 py-1 bg-zinc-800 text-white rounded text-xs hover:bg-zinc-700">+</button>
+        <button id="zoomInBtn" class="px-2 py-1 bg-zinc-800 text-white rounded text-xs hover:bg-zinc-700">+</button>
 
         <select id="componentSelect" class="bg-zinc-950 border border-zinc-700 text-xs text-zinc-200 px-2.5 py-1.5 rounded focus:outline-none focus:border-amber-500">
             <option value="" disabled selected>+ Komponente hinzufügen...</option>

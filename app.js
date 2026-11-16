@@ -426,12 +426,12 @@ const maxScale = 2.0; // Bis zu 200% reinzoomen
 
 function updateZoom() {
     const inner = document.getElementById('canvasInner');
-    const zoomLabel = document.getElementById('zoomLevel');
+    const zoomLevel = document.getElementById('zoomLevel');
     if (inner) {
         inner.style.transform = `scale(${scale})`;
     }
-    if (zoomLabel) {
-        zoomLabel.innerText = `${Math.round(scale * 100)}%`;
+    if (zoomLevel) {
+        zoomLevel.innerText = `${Math.round(scale * 100)}%`;
     }
 }
 
@@ -448,3 +448,7 @@ function zoomOut() {
         updateZoom();
     }
 }
+
+// Event-Listener verknüpfen
+document.getElementById('zoomInBtn')?.addEventListener('click', zoomIn);
+document.getElementById('zoomOutBtn')?.addEventListener('click', zoomOut);
