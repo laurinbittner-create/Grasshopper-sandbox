@@ -155,6 +155,7 @@ const componentSelect = document.getElementById('componentSelect');
 const addBtn = document.getElementById('addBtn');
 const clearBtn = document.getElementById('clearBtn');
 const canvasWorkspace = document.getElementById('canvasWorkspace');
+const nodesContainer = document.getElementById('nodesContainer'); // <--- NEU HIER
 const emptyState = document.getElementById('emptyState');
 const connectionCount = document.getElementById('connectionCount');
 const wiresGroup = document.getElementById('wiresGroup');
