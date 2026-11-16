@@ -183,6 +183,67 @@ function renderCanvas() {
     if (aktiveCanvasNodes.length === 0) {
         emptyState.style.display = 'flex';
         connectionCount.textContent = '0';
+       
+ // Berechnet den Datenfluss durch alle Kabel und aktualisiert Bausteine & Python-Snippets
+function evaluiereNetzwerk() {
+    // 1. Sammle alle aktuellen Ausgabewerte der Bausteine
+    let nodeOutputs = {}; // Key: "nodeIndex-pinIndex", Value: Zahl/Wert
+
+    aktiveCanvasNodes.forEach((node, nodeIdx) => {
+        if (node.id === 'slider') {
+            // Der Slider hat genau einen Ausgang (Pin 0)
+            nodeOutputs[`${nodeIdx}-0`] = node.value !== undefined ? node.value : 50;
+        }
+        // Weitere Quellen (wie Point etc.) können hier später einfach ergänzt werden
+    });
+
+    // 2. Verfolge die Kabel (Verbindungen) und reiche Werte an Eingänge weiter
+    let nodeInputs = {}; // Key: "nodeIndex-pinIndex", Value: eingetragener Wert
+
+    verbindungen.forEach(v => {
+        const sourceKey = `${v.fromNode}-${v.fromPin}`;
+        const targetKey = `${v.toNode}-${v.toPin}`;
+        
+        if (nodeOutputs[sourceKey] !== undefined) {
+            nodeInputs[targetKey] = nodeOutputs[sourceKey];
+        }
+    });
+
+    // 3. Berechne Mathe- & Logik-Bausteine basierend auf den Eingängen
+    aktiveCanvasNodes.forEach((node, nodeIdx) => {
+        // Standardmäßig auf "None" setzen, Fehler werden unten überschrieben
+        node.fehler = "None";
+
+        if (node.id === 'addition' || node.id === 'multiplication' || node.id === 'subtraction' || node.id === 'division') {
+            // Hole Werte für Pin 0 (A) und Pin 1 (B). Wenn kein Kabel dran ist, Standardwert 0 annehmen.
+            const valA = nodeInputs[`${nodeIdx}-0`] !== undefined ? nodeInputs[`${nodeIdx}-0`] : 0;
+            const valB = nodeInputs[`${nodeIdx}-1`] !== undefined ? nodeInputs[`${nodeIdx}-1`] : 0;
+
+            let res = 0;
+            if (node.id === 'addition') {
+                res = valA + valB;
+                node.python = `ergebnis = ${valA} + ${valB} (${res})`;
+            } else if (node.id === 'subtraction') {
+                res = valA - valB;
+                node.python = `ergebnis = ${valA} - ${valB} (${res})`;
+            } else if (node.id === 'multiplication') {
+                res = valA * valB;
+                node.python = `ergebnis = ${valA} * ${valB} (${res})`;
+            } else if (node.id === 'division') {
+                if (valB === 0) {
+                    node.fehler = "Division by zero";
+                    node.python = `ergebnis = ${valA} / ${valB}`;
+                } else {
+                    res = valA / valB;
+                    node.python = `ergebnis = ${valA} / ${valB} (${res.toFixed(2)})`;
+                }
+            }
+
+            // Speichere das Ergebnis am Ausgang (Pin 0) dieses Mathe-Bausteins
+            nodeOutputs[`${nodeIdx}-0`] = res;
+        }
+    });
+}
         wiresGroup.innerHTML = '';
         return;
     }
