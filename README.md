@@ -13,7 +13,7 @@ Eine webbasierte Sandbox (inspiriert von Rhino/Grasshopper) zur Visualisierung u
 
 ---
 
-## 📂 Projektstruktur
+##  Projektstruktur
 
 * `index.html` – Enthält das Hauptgerüst, die Kopfzeile (Toolbar) und den scrollbaren Arbeitsbereich (`#canvasWorkspace`) mit dem SVG-Canvas (`#wireCanvas`).
 * `style.css` – Beinhaltet das feine, gepunktete Hintergrund-Raster (`radial-gradient`) für die unendliche Zeichenfläche.
