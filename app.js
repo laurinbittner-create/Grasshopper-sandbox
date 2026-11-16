@@ -1,14 +1,14 @@
-// === HIER GANZ OBEN IN DIE APP.JS ===
+// === GLOBALE ZOOM-VARIABLEN & FUNKTIONEN (Ganz oben) ===
 let scale = 1;
-const minScale = 0.3;
-const maxScale = 2.0;
+const minScale = 0.3; // Bis zu 30% rauszoomen
+const maxScale = 2.0; // Bis zu 200% reinzoomen
 
 function updateZoom() {
     const inner = document.getElementById('canvasInner');
     const zoomLevel = document.getElementById('zoomLevel');
     if (inner) {
         inner.style.transform = `scale(${scale})`;
-        inner.style.transformOrigin = 'top left';
+        inner.style.transformOrigin = 'top left'; // Hält den Anker stabil
     }
     if (zoomLevel) {
         zoomLevel.innerText = `${Math.round(scale * 100)}%`;
@@ -291,7 +291,7 @@ function renderCanvas() {
         window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
         window.addEventListener('mouseup', () => { isDragging = false; });
 
-        // Touch-Events (Handy / Tablet) - Exklusive Aussparung für Inputs & Slider
+        // Touch-Events (Handy / Tablet)
         nodeCard.addEventListener('touchstart', (e) => {
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.classList.contains('pin') || e.target.closest('code')) return;
             const touch = e.touches[0];
@@ -421,7 +421,6 @@ canvasWorkspace.addEventListener('scroll', () => {
     drawWires();
 });
 
-// Performance-optimiert: Aktualisiert nur das UI-Element direkt ohne Canvas-Neugenießung (macht den Slider butterweich!)
 window.updateSliderValue = function(nodeIndex, val) {
     const numVal = parseFloat(val);
     if (isNaN(numVal)) return;
@@ -429,7 +428,6 @@ window.updateSliderValue = function(nodeIndex, val) {
     aktiveCanvasNodes[nodeIndex].value = numVal;
     aktiveCanvasNodes[nodeIndex].python = `wert = ${numVal}`;
 
-    // Direktes Update der betroffenen Felder ohne DOM-Zerstörung
     const rangeEl = document.getElementById('range-' + nodeIndex);
     const numEl = document.getElementById('num-' + nodeIndex);
     const pyEl = document.getElementById('py-' + nodeIndex);
@@ -451,6 +449,7 @@ window.updateSliderBounds = function(nodeIndex, boundType, val) {
     renderCanvas();
 };
 
+// === EVENT-LISTENER FÜR ZOOM-BUTTONS (Ganz unten) ===
 document.addEventListener('DOMContentLoaded', () => {
     const btnIn = document.getElementById('zoomInBtn');
     const btnOut = document.getElementById('zoomOutBtn');
