@@ -215,6 +215,7 @@ function extrahiereZahl(val, fallback = 0) {
 }
 function evaluiereNetzwerk() {
     let nodeOutputs = {};
+    let nodeFehlerOutputs = new Set();
 
     // Startwerte der Slider sammeln
     aktiveCanvasNodes.forEach((node, nodeIdx) => {
@@ -228,12 +229,17 @@ function evaluiereNetzwerk() {
 
     for (let step = 0; step < durchlaeufe; step++) {
         let nodeInputs = {};
+        let inputHatFehler = {};
 
         verbindungen.forEach(v => {
             const sourceKey = `${v.fromNode}-${v.fromPin}`;
             const targetKey = `${v.toNode}-${v.toPin}`;
-            if (nodeOutputs[sourceKey] !== undefined) {
+
+            if (nodeInputs[targetKey] === undefined && nodeOutputs[sourceKey] !== undefined) {
                 nodeInputs[targetKey] = nodeOutputs[sourceKey];
+            }
+            if (nodeFehlerOutputs.has(sourceKey)) {
+                inputHatFehler[targetKey] = true;
             }
         });
 
@@ -246,8 +252,20 @@ function evaluiereNetzwerk() {
                 node.id === 'subtraction' ||
                 node.id === 'division'
             ) {
-                const valA = nodeInputs[`${nodeIdx}-0`] !== undefined ? parseFloat(nodeInputs[`${nodeIdx}-0`]) : 0;
-                const valB = nodeInputs[`${nodeIdx}-1`] !== undefined ? parseFloat(nodeInputs[`${nodeIdx}-1`]) : 0;
+                const keyA = `${nodeIdx}-0`;
+                const keyB = `${nodeIdx}-1`;
+
+                // Falls ein verbundener Eingang aus einem Fehlerzustand (z. B. Division durch 0) kommt
+                if (inputHatFehler[keyA] || inputHatFehler[keyB]) {
+                    node.fehler = "Upstream error";
+                    node.python = `ergebnis = None  # Fehler aus Vorgänger-Baustein`;
+                    nodeOutputs[`${nodeIdx}-0`] = undefined;
+                    nodeFehlerOutputs.add(`${nodeIdx}-0`);
+                    return;
+                }
+
+                const valA = extrahiereZahl(nodeInputs[keyA], 0);
+                const valB = extrahiereZahl(nodeInputs[keyB], 0);
 
                 let res = 0;
                 if (node.id === 'addition') {
@@ -261,15 +279,22 @@ function evaluiereNetzwerk() {
                     node.python = `ergebnis = ${valA} * ${valB} (${res})`;
                 } else if (node.id === 'division') {
                     if (valB === 0) {
-                        res = 0;
                         node.fehler = "Division by zero";
                         node.python = `ergebnis = ${valA} / ${valB}`;
+                        nodeOutputs[`${nodeIdx}-0`] = undefined;
+                        nodeFehlerOutputs.add(`${nodeIdx}-0`);
+                        return;
                     } else {
                         res = valA / valB;
                         node.python = `ergebnis = ${valA} / ${valB} (${res.toFixed(2)})`;
                     }
                 }
-// --- SETS / DATA TREES ---
+
+                nodeFehlerOutputs.delete(`${nodeIdx}-0`);
+                nodeOutputs[`${nodeIdx}-0`] = res;
+            }
+
+            // --- SETS / DATA TREES ---
             if (node.id === "merge") {
                 const eingehendeKabel = verbindungen.filter(v => v.toNode === nodeIdx);
                 const gesammelteItems = [];
@@ -343,8 +368,6 @@ function evaluiereNetzwerk() {
                     node.python = `element = liste[${idx}]  # -> ${JSON.stringify(treffer)}`;
                     nodeOutputs[`${nodeIdx}-0`] = treffer;
                 }
-            }
-                nodeOutputs[`${nodeIdx}-0`] = res;
             }
         });
     }
@@ -606,13 +629,14 @@ addBtn.addEventListener('click', () => {
 
         aktiveCanvasNodes.push({
             ...bausteinObjekt,
+            inputs: Array.isArray(bausteinObjekt.inputs) ? [...bausteinObjekt.inputs] : [],
+            outputs: Array.isArray(bausteinObjekt.outputs) ? [...bausteinObjekt.outputs] : [],
             x: viewX + (aktiveCanvasNodes.length * 30) % 300,
             y: viewY + (aktiveCanvasNodes.length * 30) % 200
         });
         renderCanvas();
     }
 });
-
 window.removeNode = function(event, index) {
     event.stopPropagation();
     aktiveCanvasNodes.splice(index, 1);

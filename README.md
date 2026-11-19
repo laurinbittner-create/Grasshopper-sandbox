@@ -65,3 +65,16 @@ Index out of range: Ein Fehlerzustand (z. B. bei List Item), der auftritt, wenn 
 Ast (Branch) im Data Tree: Ein einzelner Zweig innerhalb eines Datenbaums, der eine geordnete Liste von Elementen unter einem bestimmten Pfad (wie {0} oder {0;1}) bündelt.
 
 Hilfsfunktion (Helper Function): Eine kleine, klar abgegrenzte Funktion (wie normalisiereTree() oder extrahiereZahl()), die eine wiederkehrende Teilaufgabe kapselt, damit Hauptfunktionen wie evaluiereNetzwerk() übersichtlich und wartbar bleiben.
+
+NaN (Not-a-Number): Ein spezieller Wert in JavaScript, der entsteht, wenn eine mathematische Operation oder Umwandlung (wie parseFloat(...) auf einem Objekt) keine gültige Zahl ergibt – mit extrahiereZahl(...) fangen wir das ab, bevor es eine Berechnung unbemerkt zerschießt.
+
+Ternärer Operator (bedingung ? wennWahr : wennFalsch): Eine kompakte Kurzform einer if...else-Abfrage in JavaScript, die je nach Bedingung einen von zwei Werten zurückgibt.
+
+Set (Menge): Eine Datenstruktur (in JavaScript z. B. new Set()), die eindeutige Einträge ohne Duplikate verwaltet und schnelle Prüfungen wie .has(...) sowie .add(...) / .delete(...) erlaubt – ideal, um fehlerhafte Ausgangs-Pins (nodeFehlerOutputs) sauber zu tracken.
+
+Referenz vs. Kopie (Shallow Copy): Wenn zwei Bausteine dasselbe Array im Speicher teilen (Referenz), ändert ein .push() beim einen Baustein ungewollt auch den anderen – mit [...node.inputs] erzeugst du eine eigene Kopie pro Instanz.
+
+Self-Loop (Selbstverbindung): Eine Verbindung, bei der Ausgang (fromNode) und Eingang (toNode) auf demselben Baustein liegen – in handlePinClick bereits durch selectedPin.nodeIndex === nodeIdx abgefangen.
+
+Spread-Operator (...): Eine JavaScript-Syntax, mit der Eigenschaften eines Objekts (...bausteinObjekt) oder Elemente eines Arrays ([...bausteinObjekt.inputs]) flach in ein neues Objekt oder Array kopiert werden.
+
