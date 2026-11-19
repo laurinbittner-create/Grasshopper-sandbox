@@ -78,3 +78,17 @@ Self-Loop (Selbstverbindung): Eine Verbindung, bei der Ausgang (fromNode) und Ei
 
 Spread-Operator (...): Eine JavaScript-Syntax, mit der Eigenschaften eines Objekts (...bausteinObjekt) oder Elemente eines Arrays ([...bausteinObjekt.inputs]) flach in ein neues Objekt oder Array kopiert werden.
 
+Reproduzierbarkeit: Die Eigenschaft eines Fehlers oder Verhaltens, sich unter denselben Bedingungen zuverlässig erneut auslösen zu lassen – lässt es sich nicht reproduzieren, ist es oft ein einmaliger Bedien- oder Zustands-Effekt gewesen.
+
+Flatten (Abflachen): Das Zusammenführen mehrerer Äste oder verschachtelter Listenebenen eines Data Trees in eine einzige flache Liste von Elementen.
+
+Index (0-basiert): Die Zählweise einer Liste ab 0 – das erste Element liegt also bei Index 0, das zweite Element bei Index 1.
+
+event.stopPropagation(): Eine Methode in JavaScript, die verhindert, dass ein Event (wie ein Klick auf den +-Button) an übergeordnete Elemente (wie die verschiebbare Node-Karte oder das Canvas) weitergereicht wird.
+
+Doppelte Code-Blöcke / Dead Code: Code-Abschnitte, die doppelt vorhanden sind oder durch einen früheren Block bzw. fehlende Klammern nicht sauber greifen – das Entfernen schafft Klarheit und verhindert unerwartete Überschreibungen.
+
+Upstream Error: Ein Folgefehler in einem Datenflussnetzwerk, der entsteht, weil ein vorgelagerter Baustein (Upstream) bereits einen Fehler erzeugt hat und nachfolgende Bausteine diesen Zustand sauber übernehmen, statt falsche Ersatzwerte zu berechnen.
+
+Pin-Index: Die fortlaufende Nummerierung (0, 1, 2, ...) der Eingangs- bzw. Ausgangs-Pins eines Bausteins, über die Verbindungen (toPin, fromPin) und Werte (${nodeIdx}-${pinIdx}) eindeutig zugeordnet werden.
+

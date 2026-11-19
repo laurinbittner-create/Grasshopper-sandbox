@@ -148,14 +148,14 @@ const bausteinBibliothek = [
 ];
 
 let aktiveCanvasNodes = [];
-let verbindungen = []; 
-let selectedPin = null; 
+let verbindungen = [];
+let selectedPin = null;
 
 const componentSelect = document.getElementById('componentSelect');
 const addBtn = document.getElementById('addBtn');
 const clearBtn = document.getElementById('clearBtn');
 const canvasWorkspace = document.getElementById('canvasWorkspace');
-const nodesContainer = document.getElementById('nodesContainer'); // <--- NEU HIER
+const nodesContainer = document.getElementById('nodesContainer');
 const emptyState = document.getElementById('emptyState');
 const connectionCount = document.getElementById('connectionCount');
 const wiresGroup = document.getElementById('wiresGroup');
@@ -165,16 +165,17 @@ const kategorien = [...new Set(bausteinBibliothek.map(b => b.kategorie))];
 kategorien.forEach(kat => {
     const optgroup = document.createElement('optgroup');
     optgroup.label = kat;
-    
+
     bausteinBibliothek.filter(b => b.kategorie === kat).forEach(b => {
         const option = document.createElement('option');
         option.value = b.id;
         option.textContent = b.name;
         optgroup.appendChild(option);
     });
-    
+
     componentSelect.appendChild(optgroup);
 });
+
 // Hilfsfunktion: Macht aus einem Einzelwert, Array oder Baum ein einheitliches Tree-Objekt
 // Struktur: { branches: [ { path: "{0}", items: [...] } ] }
 function normalisiereTree(val) {
@@ -205,14 +206,19 @@ function extrahiereZahl(val, fallback = 0) {
     if (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val))) return Number(val);
     if (val && typeof val === "object" && Array.isArray(val.branches)) {
         for (const b of val.branches) {
-            if (Array.isArray(b.items) && b.items.length > 0) {
-                const n = parseFloat(b.items[0]);
-                if (!isNaN(n)) return n;
+            if (Array.isArray(b.items)) {
+                for (const item of b.items) {
+                    if (item !== undefined && item !== null && String(item).trim() !== "") {
+                        const n = parseFloat(item);
+                        if (!isNaN(n)) return n;
+                    }
+                }
             }
         }
     }
     return fallback;
 }
+
 function evaluiereNetzwerk() {
     let nodeOutputs = {};
     let nodeFehlerOutputs = new Set();
@@ -224,7 +230,7 @@ function evaluiereNetzwerk() {
         }
     });
 
-    // Mehrere Durchläufe, damit Ketten (z. B. Slider -> Addition -> Division) sauber durchlaufen
+    // Mehrere Durchläufe, damit Ketten (z. B. Slider -> Addition -> Division -> Tree) sauber durchlaufen
     const durchlaeufe = Math.max(2, aktiveCanvasNodes.length + 1);
 
     for (let step = 0; step < durchlaeufe; step++) {
@@ -254,13 +260,14 @@ function evaluiereNetzwerk() {
             ) {
                 const keyA = `${nodeIdx}-0`;
                 const keyB = `${nodeIdx}-1`;
+                const outKey = `${nodeIdx}-0`;
 
                 // Falls ein verbundener Eingang aus einem Fehlerzustand (z. B. Division durch 0) kommt
                 if (inputHatFehler[keyA] || inputHatFehler[keyB]) {
                     node.fehler = "Upstream error";
                     node.python = `ergebnis = None  # Fehler aus Vorgänger-Baustein`;
-                    nodeOutputs[`${nodeIdx}-0`] = undefined;
-                    nodeFehlerOutputs.add(`${nodeIdx}-0`);
+                    nodeOutputs[outKey] = undefined;
+                    nodeFehlerOutputs.add(outKey);
                     return;
                 }
 
@@ -281,8 +288,8 @@ function evaluiereNetzwerk() {
                     if (valB === 0) {
                         node.fehler = "Division by zero";
                         node.python = `ergebnis = ${valA} / ${valB}`;
-                        nodeOutputs[`${nodeIdx}-0`] = undefined;
-                        nodeFehlerOutputs.add(`${nodeIdx}-0`);
+                        nodeOutputs[outKey] = undefined;
+                        nodeFehlerOutputs.add(outKey);
                         return;
                     } else {
                         res = valA / valB;
@@ -290,15 +297,30 @@ function evaluiereNetzwerk() {
                     }
                 }
 
-                nodeFehlerOutputs.delete(`${nodeIdx}-0`);
-                nodeOutputs[`${nodeIdx}-0`] = res;
+                nodeFehlerOutputs.delete(outKey);
+                nodeOutputs[outKey] = res;
             }
 
             // --- SETS / DATA TREES ---
             if (node.id === "merge") {
-                const eingehendeKabel = verbindungen.filter(v => v.toNode === nodeIdx);
-                const gesammelteItems = [];
+                const outKey = `${nodeIdx}-0`;
+                const eingehendeKabel = verbindungen
+                    .filter(v => v.toNode === nodeIdx)
+                    .sort((a, b) => a.toPin - b.toPin);
 
+                const hatVorgaengerFehler = eingehendeKabel.some(
+                    v => nodeFehlerOutputs.has(`${v.fromNode}-${v.fromPin}`)
+                );
+
+                if (hatVorgaengerFehler) {
+                    node.fehler = "Upstream error";
+                    node.python = `ergebnis = None  # Fehler aus Vorgänger-Baustein`;
+                    nodeOutputs[outKey] = undefined;
+                    nodeFehlerOutputs.add(outKey);
+                    return;
+                }
+
+                const gesammelteItems = [];
                 eingehendeKabel.forEach(v => {
                     const raw = nodeOutputs[`${v.fromNode}-${v.fromPin}`];
                     const tree = normalisiereTree(raw);
@@ -311,16 +333,29 @@ function evaluiereNetzwerk() {
                     branches: [{ path: "{0}", items: gesammelteItems }]
                 };
 
+                node.fehler = "None";
+                nodeFehlerOutputs.delete(outKey);
                 node.python = `ergebnis = ${JSON.stringify(gesammelteItems)}`;
-                nodeOutputs[`${nodeIdx}-0`] = mergedTree;
+                nodeOutputs[outKey] = mergedTree;
             } else if (node.id === "graft") {
-                const rawInput = nodeInputs[`${nodeIdx}-0`];
-                const tree = normalisiereTree(rawInput);
+                const inputKey = `${nodeIdx}-0`;
+                const outputKey = `${nodeIdx}-0`;
+
+                if (inputHatFehler[inputKey]) {
+                    node.fehler = "Upstream error";
+                    node.python = `zweig = None  # Fehler aus Vorgänger-Baustein`;
+                    nodeOutputs[outputKey] = undefined;
+                    nodeFehlerOutputs.add(outputKey);
+                    return;
+                }
+
+                const tree = normalisiereTree(nodeInputs[inputKey]);
 
                 if (tree.branches.length === 0) {
                     node.fehler = "Data matching failed";
                     node.python = `zweig = []`;
-                    nodeOutputs[`${nodeIdx}-0`] = { branches: [] };
+                    nodeOutputs[outputKey] = { branches: [] };
+                    nodeFehlerOutputs.delete(outputKey);
                 } else {
                     const neueBranches = [];
                     const pythonListe = [];
@@ -335,82 +370,78 @@ function evaluiereNetzwerk() {
                         });
                     });
 
+                    node.fehler = "None";
+                    nodeFehlerOutputs.delete(outputKey);
                     node.python = `zweig = ${JSON.stringify(pythonListe)}`;
-                    nodeOutputs[`${nodeIdx}-0`] = { branches: neueBranches };
+                    nodeOutputs[outputKey] = { branches: neueBranches };
                 }
             } else if (node.id === "flatten") {
-                const rawInput = nodeInputs[`${nodeIdx}-0`];
-                const tree = normalisiereTree(rawInput);
+                const inputKey = `${nodeIdx}-0`;
+                const outputKey = `${nodeIdx}-0`;
+
+                if (inputHatFehler[inputKey]) {
+                    node.fehler = "Upstream error";
+                    node.python = `flach = None  # Fehler aus Vorgänger-Baustein`;
+                    nodeOutputs[outputKey] = undefined;
+                    nodeFehlerOutputs.add(outputKey);
+                    return;
+                }
+
+                const tree = normalisiereTree(nodeInputs[inputKey]);
                 const flachItems = [];
 
                 tree.branches.forEach(b => {
                     flachItems.push(...b.items);
                 });
 
+                node.fehler = "None";
+                nodeFehlerOutputs.delete(outputKey);
                 node.python = `flach = ${JSON.stringify(flachItems)}`;
-                nodeOutputs[`${nodeIdx}-0`] = {
+                nodeOutputs[outputKey] = {
                     branches: [{ path: "{0}", items: flachItems }]
                 };
             } else if (node.id === "listitem") {
-                const rawList = nodeInputs[`${nodeIdx}-0`];
-                const rawIndex = nodeInputs[`${nodeIdx}-1`];
-                const idx = Math.trunc(extrahiereZahl(rawIndex, 0));
-                const tree = normalisiereTree(rawList);
+                const keyList = `${nodeIdx}-0`;
+                const keyIndex = `${nodeIdx}-1`;
+                const keyOut = `${nodeIdx}-0`;
 
+                if (inputHatFehler[keyList] || inputHatFehler[keyIndex]) {
+                    node.fehler = "Upstream error";
+                    node.python = `element = None  # Fehler aus Vorgänger-Baustein`;
+                    nodeOutputs[keyOut] = undefined;
+                    nodeFehlerOutputs.add(keyOut);
+                    return;
+                }
+
+                const idx = Math.trunc(extrahiereZahl(nodeInputs[keyIndex], 0));
+                const tree = normalisiereTree(nodeInputs[keyList]);
                 const alleItems = tree.branches.flatMap(b => b.items);
 
                 if (alleItems.length === 0 || idx < 0 || idx >= alleItems.length) {
                     node.fehler = "Index out of range";
                     node.python = `element = liste[${idx}]  # Fehler: Index out of range`;
-                    nodeOutputs[`${nodeIdx}-0`] = undefined;
+                    nodeOutputs[keyOut] = undefined;
+                    nodeFehlerOutputs.add(keyOut);
                 } else {
                     const treffer = alleItems[idx];
+                    node.fehler = "None";
+                    nodeFehlerOutputs.delete(keyOut);
                     node.python = `element = liste[${idx}]  # -> ${JSON.stringify(treffer)}`;
-                    nodeOutputs[`${nodeIdx}-0`] = treffer;
+                    nodeOutputs[keyOut] = treffer;
                 }
             }
         });
     }
 }
 
-    aktiveCanvasNodes.forEach((node, nodeIdx) => {
-        node.fehler = "None";
-        if (node.id === 'addition' || node.id === 'multiplication' || node.id === 'subtraction' || node.id === 'division') {
-            const valA = nodeInputs[`${nodeIdx}-0`] !== undefined ? nodeInputs[`${nodeIdx}-0`] : 0;
-            const valB = nodeInputs[`${nodeIdx}-1`] !== undefined ? nodeInputs[`${nodeIdx}-1`] : 0;
-
-            let res = 0;
-            if (node.id === 'addition') {
-                res = valA + valB;
-                node.python = `ergebnis = ${valA} + ${valB} (${res})`;
-            } else if (node.id === 'subtraction') {
-                res = valA - valB;
-                node.python = `ergebnis = ${valA} - ${valB} (${res})`;
-            } else if (node.id === 'multiplication') {
-                res = valA * valB;
-                node.python = `ergebnis = ${valA} * ${valB} (${res})`;
-            } else if (node.id === 'division') {
-                if (valB === 0) {
-                    node.fehler = "Division by zero";
-                    node.python = `ergebnis = ${valA} / ${valB}`;
-                } else {
-                    res = valA / valB;
-                    node.python = `ergebnis = ${valA} / ${valB} (${res.toFixed(2)})`;
-                }
-            }
-            nodeOutputs[`${nodeIdx}-0`] = res;
-        }
-    });
-
 function renderCanvas() {
-    evaluiereNetzwerk(); //
+    evaluiereNetzwerk();
     const existingNodes = canvasWorkspace.querySelectorAll('.draggable-node');
     existingNodes.forEach(n => n.remove());
 
     if (aktiveCanvasNodes.length === 0) {
         emptyState.style.display = 'flex';
         connectionCount.textContent = '0';
-       
         wiresGroup.innerHTML = '';
         return;
     }
@@ -435,7 +466,7 @@ function renderCanvas() {
             const isConnected = connectedWires.length > 0;
             const pinClass = isConnected ? 'pin-connected' : 'bg-zinc-600';
             const countText = isConnected ? ' (' + connectedWires.length + ')' : '';
-            
+
             return '<div class="text-[11px] text-zinc-300 flex items-center gap-2 py-1">' +
                    '<span class="pin input-pin ' + pinClass + ' border border-zinc-300 inline-block hover:bg-amber-500 transition-all" data-node="' + nodeIndex + '" data-type="input" data-pin="' + pinIndex + '" data-name="' + inp + '"></span>' +
                    inp + '<span class="text-[9px] text-emerald-400 font-bold">' + countText + '</span>' +
@@ -465,6 +496,10 @@ function renderCanvas() {
                 '</div>';
         }
 
+        const mergePlusBtnHtml = b.id === 'merge'
+            ? `<button type="button" onclick="event.stopPropagation(); addMergeInput(${nodeIndex});" class="mt-1.5 px-2 py-0.5 text-[10px] font-bold rounded bg-sky-700 hover:bg-sky-600 text-white cursor-pointer" title="Weiteren Input hinzufügen">+ Slot</button>`
+            : '';
+
         nodeCard.innerHTML = `
             <div>
                 <div class="${b.kategorieFarbe} px-3 py-1.5 flex justify-between items-center text-white cursor-grab">
@@ -475,7 +510,10 @@ function renderCanvas() {
                     </div>
                 </div>
                 <div class="px-3 py-2 bg-zinc-950/60 border-b border-zinc-800 flex justify-between">
-                    <div class="space-y-1">${inputsHtml}</div>
+                    <div>
+                        <div class="space-y-1">${inputsHtml}</div>
+                        ${mergePlusBtnHtml}
+                    </div>
                     <div class="space-y-1 text-right">${outputsHtml}</div>
                 </div>
                 <div class="p-3">
@@ -488,7 +526,7 @@ function renderCanvas() {
             </div>
             <div class="px-3 py-2 bg-zinc-950/90 border-t border-zinc-800 text-[11px] flex justify-between items-center">
                 <span class="text-zinc-500">Status:</span>
-                <span class="${b.fehler === 'None' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${b.fehler}</span>
+                <span id="status-${nodeIndex}" class="${b.fehler === 'None' ? 'text-emerald-400' : 'text-rose-400'} font-bold">${b.fehler}</span>
             </div>
         `;
 
@@ -532,12 +570,12 @@ function renderCanvas() {
             if (!isDragging) return;
             const touch = e.touches[0];
             onMove(touch.clientX, touch.clientY);
-            e.preventDefault(); 
+            e.preventDefault();
         }, { passive: false });
 
         window.addEventListener('touchend', () => { isDragging = false; });
 
-        nodesContainer.appendChild(nodeCard); //
+        nodesContainer.appendChild(nodeCard);
     });
 
     document.querySelectorAll('.pin').forEach(pinElement => {
@@ -568,7 +606,7 @@ function drawWires() {
             const y2 = (toRect.top + toRect.height / 2 - canvasRect.top + canvasWorkspace.scrollTop) / scale;
 
             const dx = Math.abs(x2 - x1) * 0.5;
-           const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+            const pathData = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
 
             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
             path.setAttribute("d", pathData);
@@ -589,7 +627,7 @@ function handlePinClick(pin) {
 
     if (type === 'output') {
         document.querySelectorAll('.pin').forEach(p => {
-            if(!p.classList.contains('pin-connected')) p.classList.remove('pin-active');
+            if (!p.classList.contains('pin-connected')) p.classList.remove('pin-active');
         });
         pin.classList.add('pin-active');
         selectedPin = { nodeIndex: nodeIdx, pinIndex };
@@ -605,6 +643,8 @@ function handlePinClick(pin) {
                 renderCanvas();
                 return;
             }
+
+            verbindungen = verbindungen.filter(v => !(v.toNode === nodeIdx && v.toPin === pinIndex));
 
             verbindungen.push({
                 fromNode: selectedPin.nodeIndex,
@@ -637,6 +677,7 @@ addBtn.addEventListener('click', () => {
         renderCanvas();
     }
 });
+
 window.removeNode = function(event, index) {
     event.stopPropagation();
     aktiveCanvasNodes.splice(index, 1);
@@ -682,10 +723,24 @@ window.updateSliderValue = function(nodeIndex, val) {
     });
 };
 
+window.addMergeInput = function(nodeIndex) {
+    const node = aktiveCanvasNodes[nodeIndex];
+    if (!node || node.id !== "merge") return;
+
+    if (!Array.isArray(node.inputs)) {
+        node.inputs = ["data 1: Input", "data 2: Input"];
+    }
+
+    const nextNr = node.inputs.length + 1;
+    node.inputs.push(`data ${nextNr}: Input`);
+
+    renderCanvas();
+};
+
 window.updateSliderBounds = function(nodeIndex, boundType, val) {
     const numVal = parseFloat(val);
     if (isNaN(numVal)) return;
-    
+
     if (boundType === 'min') {
         aktiveCanvasNodes[nodeIndex].min = numVal;
     } else if (boundType === 'max') {
