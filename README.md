@@ -57,3 +57,11 @@ Fehlerweitergabe (Error Propagation): Das Verhalten in einem Datenflussnetzwerk,
 Fan-Out / Verzweigung: Das Verbinden eines einzelnen Ausgangs-Pins mit mehreren Eingangs-Pins (wie hier beim Ausgang der Addition, der sowohl in die Division als auch in die Subtraktion führt), sodass derselbe Wert an mehrere Stellen gleichzeitig verteilt wird.
 
 Pfad (Path) im Data Tree: Die Adressierung eines bestimmten Astes (Branches) innerhalb eines Datenbaums (in Grasshopper oft in geschweiften Klammern wie {0} oder {0;0;1} geschrieben), die angibt, auf welcher hierarchischen Ebene und in welcher Gruppe eine Liste von Werten liegt.
+
+List Item: Ein Baustein (in Grasshopper typischerweise unter Sets / List), der aus einer Liste oder einem Ast gezielt das Element an einer bestimmten Position (Index, z. B. 0 für das erste Element) herausgreift.
+
+Index out of range: Ein Fehlerzustand (z. B. bei List Item), der auftritt, wenn auf eine Listenposition zugegriffen wird, die außerhalb der gültigen Länge der Liste liegt (z. B. Index 5 bei einer Liste mit nur 2 Elementen).
+
+Ast (Branch) im Data Tree: Ein einzelner Zweig innerhalb eines Datenbaums, der eine geordnete Liste von Elementen unter einem bestimmten Pfad (wie {0} oder {0;1}) bündelt.
+
+Hilfsfunktion (Helper Function): Eine kleine, klar abgegrenzte Funktion (wie normalisiereTree() oder extrahiereZahl()), die eine wiederkehrende Teilaufgabe kapselt, damit Hauptfunktionen wie evaluiereNetzwerk() übersichtlich und wartbar bleiben.

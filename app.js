@@ -175,6 +175,44 @@ kategorien.forEach(kat => {
     
     componentSelect.appendChild(optgroup);
 });
+// Hilfsfunktion: Macht aus einem Einzelwert, Array oder Baum ein einheitliches Tree-Objekt
+// Struktur: { branches: [ { path: "{0}", items: [...] } ] }
+function normalisiereTree(val) {
+    if (val && typeof val === "object" && Array.isArray(val.branches)) {
+        return {
+            branches: val.branches.map(b => ({
+                path: String(b.path),
+                items: Array.isArray(b.items) ? [...b.items] : [b.items]
+            }))
+        };
+    }
+    if (Array.isArray(val)) {
+        return {
+            branches: [{ path: "{0}", items: [...val] }]
+        };
+    }
+    if (val !== undefined && val !== null) {
+        return {
+            branches: [{ path: "{0}", items: [val] }]
+        };
+    }
+    return { branches: [] };
+}
+
+// Hilfsfunktion: Holt aus einem Baum oder Wert eine einzelne Zahl (z. B. für Mathe-Nodes)
+function extrahiereZahl(val, fallback = 0) {
+    if (typeof val === "number" && !isNaN(val)) return val;
+    if (typeof val === "string" && val.trim() !== "" && !isNaN(Number(val))) return Number(val);
+    if (val && typeof val === "object" && Array.isArray(val.branches)) {
+        for (const b of val.branches) {
+            if (Array.isArray(b.items) && b.items.length > 0) {
+                const n = parseFloat(b.items[0]);
+                if (!isNaN(n)) return n;
+            }
+        }
+    }
+    return fallback;
+}
 function evaluiereNetzwerk() {
     let nodeOutputs = {};
 
@@ -231,7 +269,81 @@ function evaluiereNetzwerk() {
                         node.python = `ergebnis = ${valA} / ${valB} (${res.toFixed(2)})`;
                     }
                 }
+// --- SETS / DATA TREES ---
+            if (node.id === "merge") {
+                const eingehendeKabel = verbindungen.filter(v => v.toNode === nodeIdx);
+                const gesammelteItems = [];
 
+                eingehendeKabel.forEach(v => {
+                    const raw = nodeOutputs[`${v.fromNode}-${v.fromPin}`];
+                    const tree = normalisiereTree(raw);
+                    tree.branches.forEach(b => {
+                        gesammelteItems.push(...b.items);
+                    });
+                });
+
+                const mergedTree = {
+                    branches: [{ path: "{0}", items: gesammelteItems }]
+                };
+
+                node.python = `ergebnis = ${JSON.stringify(gesammelteItems)}`;
+                nodeOutputs[`${nodeIdx}-0`] = mergedTree;
+            } else if (node.id === "graft") {
+                const rawInput = nodeInputs[`${nodeIdx}-0`];
+                const tree = normalisiereTree(rawInput);
+
+                if (tree.branches.length === 0) {
+                    node.fehler = "Data matching failed";
+                    node.python = `zweig = []`;
+                    nodeOutputs[`${nodeIdx}-0`] = { branches: [] };
+                } else {
+                    const neueBranches = [];
+                    const pythonListe = [];
+
+                    tree.branches.forEach((b, bIdx) => {
+                        b.items.forEach((item, iIdx) => {
+                            neueBranches.push({
+                                path: `{${bIdx};${iIdx}}`,
+                                items: [item]
+                            });
+                            pythonListe.push([item]);
+                        });
+                    });
+
+                    node.python = `zweig = ${JSON.stringify(pythonListe)}`;
+                    nodeOutputs[`${nodeIdx}-0`] = { branches: neueBranches };
+                }
+            } else if (node.id === "flatten") {
+                const rawInput = nodeInputs[`${nodeIdx}-0`];
+                const tree = normalisiereTree(rawInput);
+                const flachItems = [];
+
+                tree.branches.forEach(b => {
+                    flachItems.push(...b.items);
+                });
+
+                node.python = `flach = ${JSON.stringify(flachItems)}`;
+                nodeOutputs[`${nodeIdx}-0`] = {
+                    branches: [{ path: "{0}", items: flachItems }]
+                };
+            } else if (node.id === "listitem") {
+                const rawList = nodeInputs[`${nodeIdx}-0`];
+                const rawIndex = nodeInputs[`${nodeIdx}-1`];
+                const idx = Math.trunc(extrahiereZahl(rawIndex, 0));
+                const tree = normalisiereTree(rawList);
+
+                const alleItems = tree.branches.flatMap(b => b.items);
+
+                if (alleItems.length === 0 || idx < 0 || idx >= alleItems.length) {
+                    node.fehler = "Index out of range";
+                    node.python = `element = liste[${idx}]  # Fehler: Index out of range`;
+                    nodeOutputs[`${nodeIdx}-0`] = undefined;
+                } else {
+                    const treffer = alleItems[idx];
+                    node.python = `element = liste[${idx}]  # -> ${JSON.stringify(treffer)}`;
+                    nodeOutputs[`${nodeIdx}-0`] = treffer;
+                }
+            }
                 nodeOutputs[`${nodeIdx}-0`] = res;
             }
         });
