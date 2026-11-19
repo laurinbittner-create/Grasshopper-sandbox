@@ -92,3 +92,11 @@ Upstream Error: Ein Folgefehler in einem Datenflussnetzwerk, der entsteht, weil 
 
 Pin-Index: Die fortlaufende Nummerierung (0, 1, 2, ...) der Eingangs- bzw. Ausgangs-Pins eines Bausteins, über die Verbindungen (toPin, fromPin) und Werte (${nodeIdx}-${pinIdx}) eindeutig zugeordnet werden.
 
+Bake (in Grasshopper/Rhino): Das „Ausbacken“ von berechneter Vorschau-Geometrie aus Grasshopper in reguläre, bearbeitbare Rhino-Objekte (mit Layern/Eigenschaften) im Dokument.
+
+Durchreich-Logik (Pass-through): Eine einfache Auswertungsregel für Bausteine, die eingehende Werte oder Data Trees prüft und weiterleitet, damit eine Kette nicht an einem noch unfertigen Baustein abbricht.
+
+Ursprung / Ebene (Plane/Origin): In Grasshopper bestimmt eine Ebene (Plane) nicht nur die Position im Raum, sondern auch die Ausrichtung (X-, Y- und Z-Richtung), auf der z. B. ein Rechteck oder Kreis liegt.
+
+Quell-Pin vs. Ziel-Pin (fromPin / toPin): Der Quell-Pin liefert den Wert aus dem Vorgänger-Baustein (nodeOutputs), während der Ziel-Pin den Eingang am aktuellen Baustein (nodeInputs) beschreibt.
+

@@ -430,6 +430,72 @@ function evaluiereNetzwerk() {
                     nodeOutputs[keyOut] = treffer;
                 }
             }
+
+            // --- GEOMETRIE / VEKTOR / TRANSFORMATION (Durchreich-Logik) ---
+            if (
+                node.id === "unit_x" ||
+                node.id === "unit_y" ||
+                node.id === "unit_z" ||
+                node.id === "point" ||
+                node.id === "vector_xyz" ||
+                node.id === "curve" ||
+                node.id === "circle" ||
+                node.id === "rectangle" ||
+                node.id === "divide" ||
+                node.id === "loft" ||
+                node.id === "move" ||
+                node.id === "extrude"
+            ) {
+                const outKey = `${nodeIdx}-0`;
+                const eingehendeKabel = verbindungen
+                    .filter(v => v.toNode === nodeIdx)
+                    .sort((a, b) => a.toPin - b.toPin);
+
+                const hatVorgaengerFehler = eingehendeKabel.some(
+                    v => nodeFehlerOutputs.has(`${v.fromNode}-${v.fromPin}`)
+                );
+
+                if (hatVorgaengerFehler) {
+                    node.fehler = "Upstream error";
+                    node.python = `# Fehler aus Vorgänger-Baustein`;
+                    nodeOutputs[outKey] = undefined;
+                    nodeFehlerOutputs.add(outKey);
+                    return;
+                }
+
+                const ersterInputKey = eingehendeKabel.length > 0
+                    ? `${eingehendeKabel[0].toNode}-${eingehendeKabel[0].toPin}`
+                    : null;
+                const rawIn = ersterInputKey ? nodeInputs[ersterInputKey] : undefined;
+
+                if (node.id === "unit_x" || node.id === "unit_y" || node.id === "unit_z") {
+                    const faktor = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 1);
+                    const achse = node.id === "unit_x" ? "X" : node.id === "unit_y" ? "Y" : "Z";
+                    node.fehler = "None";
+                    nodeFehlerOutputs.delete(outKey);
+                    node.python = `vektor_${achse.toLowerCase()} = ${achse}(${faktor})`;
+                    nodeOutputs[outKey] = faktor;
+                } else if (node.id === "rectangle") {
+                    const xVal = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 10);
+                    const yVal = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 10);
+                    node.fehler = "None";
+                    nodeFehlerOutputs.delete(outKey);
+                    node.python = `rechteck = [x=${xVal}, y=${yVal}]`;
+                    nodeOutputs[outKey] = normalisiereTree([xVal, yVal]);
+                } else {
+                    const tree = normalisiereTree(rawIn);
+                    node.fehler = "None";
+                    nodeFehlerOutputs.delete(outKey);
+                    if (tree.branches.length > 0) {
+                        const items = tree.branches.flatMap(b => b.items);
+                        node.python = `${node.id}_daten = ${JSON.stringify(items)}`;
+                        nodeOutputs[outKey] = tree;
+                    } else {
+                        node.python = `${node.id}_daten = []`;
+                        nodeOutputs[outKey] = { branches: [] };
+                    }
+                }
+            }
         });
     }
 }
