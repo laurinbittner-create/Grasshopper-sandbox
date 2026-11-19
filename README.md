@@ -48,3 +48,5 @@ Konsole (Browser DevTools Console): Ein Werkzeug in den Entwickler-Werkzeugen de
 
 404 (Not Found): Ein HTTP-Statuscode, der bedeutet, dass eine angeforderte Datei oder Ressource (wie im Screenshot eine nicht vorhandene favicon.ico für das Browser-Tab-Icon) nicht gefunden wurde – stört die JavaScript-Logik deiner Sandbox aber nicht.
 
+Verkettung / Kaskade (Chaining): Das Durchreichen eines berechneten Ausgangswerts eines Bausteins über ein Kabel in den Eingang eines nachfolgenden Bausteins, sodass mehrere Operationen nacheinander eine Berechnungskette bilden.
+

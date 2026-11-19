@@ -177,20 +177,66 @@ kategorien.forEach(kat => {
 });
 function evaluiereNetzwerk() {
     let nodeOutputs = {};
+
+    // Startwerte der Slider sammeln
     aktiveCanvasNodes.forEach((node, nodeIdx) => {
         if (node.id === 'slider') {
-            nodeOutputs[`${nodeIdx}-0`] = node.value !== undefined ? node.value : 50;
+            nodeOutputs[`${nodeIdx}-0`] = node.value !== undefined ? parseFloat(node.value) : 50;
         }
     });
 
-    let nodeInputs = {};
-    verbindungen.forEach(v => {
-        const sourceKey = `${v.fromNode}-${v.fromPin}`;
-        const targetKey = `${v.toNode}-${v.toPin}`;
-        if (nodeOutputs[sourceKey] !== undefined) {
-            nodeInputs[targetKey] = nodeOutputs[sourceKey];
-        }
-    });
+    // Mehrere Durchläufe, damit Ketten (z. B. Slider -> Addition -> Division) sauber durchlaufen
+    const durchlaeufe = Math.max(2, aktiveCanvasNodes.length + 1);
+
+    for (let step = 0; step < durchlaeufe; step++) {
+        let nodeInputs = {};
+
+        verbindungen.forEach(v => {
+            const sourceKey = `${v.fromNode}-${v.fromPin}`;
+            const targetKey = `${v.toNode}-${v.toPin}`;
+            if (nodeOutputs[sourceKey] !== undefined) {
+                nodeInputs[targetKey] = nodeOutputs[sourceKey];
+            }
+        });
+
+        aktiveCanvasNodes.forEach((node, nodeIdx) => {
+            node.fehler = "None";
+
+            if (
+                node.id === 'addition' ||
+                node.id === 'multiplication' ||
+                node.id === 'subtraction' ||
+                node.id === 'division'
+            ) {
+                const valA = nodeInputs[`${nodeIdx}-0`] !== undefined ? parseFloat(nodeInputs[`${nodeIdx}-0`]) : 0;
+                const valB = nodeInputs[`${nodeIdx}-1`] !== undefined ? parseFloat(nodeInputs[`${nodeIdx}-1`]) : 0;
+
+                let res = 0;
+                if (node.id === 'addition') {
+                    res = valA + valB;
+                    node.python = `ergebnis = ${valA} + ${valB} (${res})`;
+                } else if (node.id === 'subtraction') {
+                    res = valA - valB;
+                    node.python = `ergebnis = ${valA} - ${valB} (${res})`;
+                } else if (node.id === 'multiplication') {
+                    res = valA * valB;
+                    node.python = `ergebnis = ${valA} * ${valB} (${res})`;
+                } else if (node.id === 'division') {
+                    if (valB === 0) {
+                        res = 0;
+                        node.fehler = "Division by zero";
+                        node.python = `ergebnis = ${valA} / ${valB}`;
+                    } else {
+                        res = valA / valB;
+                        node.python = `ergebnis = ${valA} / ${valB} (${res.toFixed(2)})`;
+                    }
+                }
+
+                nodeOutputs[`${nodeIdx}-0`] = res;
+            }
+        });
+    }
+}
 
     aktiveCanvasNodes.forEach((node, nodeIdx) => {
         node.fehler = "None";
@@ -220,7 +266,7 @@ function evaluiereNetzwerk() {
             nodeOutputs[`${nodeIdx}-0`] = res;
         }
     });
-}
+
 function renderCanvas() {
     evaluiereNetzwerk(); //
     const existingNodes = canvasWorkspace.querySelectorAll('.draggable-node');
@@ -476,17 +522,28 @@ canvasWorkspace.addEventListener('scroll', () => {
 window.updateSliderValue = function(nodeIndex, val) {
     const numVal = parseFloat(val);
     if (isNaN(numVal)) return;
-    
+
     aktiveCanvasNodes[nodeIndex].value = numVal;
     aktiveCanvasNodes[nodeIndex].python = `wert = ${numVal}`;
 
+    evaluiereNetzwerk();
+
     const rangeEl = document.getElementById('range-' + nodeIndex);
     const numEl = document.getElementById('num-' + nodeIndex);
-    const pyEl = document.getElementById('py-' + nodeIndex);
 
     if (rangeEl && rangeEl.value != numVal) rangeEl.value = numVal;
     if (numEl && numEl.value != numVal) numEl.value = numVal;
-    if (pyEl) pyEl.textContent = `wert = ${numVal}`;
+
+    aktiveCanvasNodes.forEach((node, idx) => {
+        const pEl = document.getElementById('py-' + idx);
+        if (pEl) pEl.textContent = node.python;
+
+        const statusEl = document.getElementById('status-' + idx);
+        if (statusEl) {
+            statusEl.textContent = node.fehler;
+            statusEl.className = node.fehler === 'None' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+        }
+    });
 };
 
 window.updateSliderBounds = function(nodeIndex, boundType, val) {
