@@ -50,3 +50,10 @@ Konsole (Browser DevTools Console): Ein Werkzeug in den Entwickler-Werkzeugen de
 
 Verkettung / Kaskade (Chaining): Das Durchreichen eines berechneten Ausgangswerts eines Bausteins über ein Kabel in den Eingang eines nachfolgenden Bausteins, sodass mehrere Operationen nacheinander eine Berechnungskette bilden.
 
+Fallback-Wert (Rückfallwert): Ein Standardwert (wie 0 für unverbundene Eingänge valA/valB oder 50 für einen noch nicht bewegten Slider), der genutzt wird, wenn kein verbundener Eingangswert oder kein eigener Wert vorliegt.
+
+Fehlerweitergabe (Error Propagation): Das Verhalten in einem Datenflussnetzwerk, bei dem ein Fehler oder ungültiger Zustand eines Bausteins (wie eine Division durch Null) an nachfolgende Bausteine durchgereicht wird, statt sie mit einem Ersatzwert (0) still weiterrechnen zu lassen.
+
+Fan-Out / Verzweigung: Das Verbinden eines einzelnen Ausgangs-Pins mit mehreren Eingangs-Pins (wie hier beim Ausgang der Addition, der sowohl in die Division als auch in die Subtraktion führt), sodass derselbe Wert an mehrere Stellen gleichzeitig verteilt wird.
+
+Pfad (Path) im Data Tree: Die Adressierung eines bestimmten Astes (Branches) innerhalb eines Datenbaums (in Grasshopper oft in geschweiften Klammern wie {0} oder {0;0;1} geschrieben), die angibt, auf welcher hierarchischen Ebene und in welcher Gruppe eine Liste von Werten liegt.
