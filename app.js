@@ -601,6 +601,7 @@ function renderCanvas() {
         emptyState.style.display = 'flex';
         connectionCount.textContent = '0';
         wiresGroup.innerHTML = '';
+        speichereZustand();
         return;
     }
     emptyState.style.display = 'none';
@@ -707,14 +708,19 @@ function renderCanvas() {
             drawWires();
         }
 
-        // Maus-Events
+       // Maus-Events
         nodeCard.addEventListener('mousedown', (e) => {
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.classList.contains('pin') || e.target.closest('code')) return;
             startDrag(e.clientX, e.clientY);
             e.stopPropagation();
         });
         window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
-        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                speichereZustand();
+            }
+        });
 
         // Touch-Events (Handy / Tablet)
         nodeCard.addEventListener('touchstart', (e) => {
@@ -731,11 +737,13 @@ function renderCanvas() {
             e.preventDefault();
         }, { passive: false });
 
-        window.addEventListener('touchend', () => { isDragging = false; });
-
-        nodesContainer.appendChild(nodeCard);
-    });
-
+        window.addEventListener('touchend', () => {
+            if (isDragging) {
+                isDragging = false;
+                speichereZustand();
+            }
+        });
+    }); // 
     document.querySelectorAll('.pin').forEach(pinElement => {
         pinElement.addEventListener('click', (e) => {
             handlePinClick(e.target);
@@ -745,7 +753,7 @@ function renderCanvas() {
 
     drawWires();
     speichereZustand();
-}
+} //
 
 function drawWires() {
     wiresGroup.innerHTML = '';
@@ -880,7 +888,8 @@ window.updateSliderValue = function(nodeIndex, val) {
             statusEl.className = node.fehler === 'None' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
         }
     });
-};
+    speicherZustand();
+}; 
 
 window.addMergeInput = function(nodeIndex) {
     const node = aktiveCanvasNodes[nodeIndex];
@@ -925,4 +934,4 @@ document.addEventListener('DOMContentLoaded', () => {
     ladeZustand();
     updateZoom();
     renderCanvas();
-});
+}); 

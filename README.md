@@ -109,3 +109,6 @@ DOMContentLoaded: Der Zeitpunkt im Browser, an dem das HTML-Dokument vollständi
 Funktionsende (Function Exit): Die letzte Zeile vor der schließenden Klammer } einer Funktion – ideal für Aufräum- oder Speicheraufrufe, nachdem alle DOM- und Zustandswerte aktuell sind.
 
 Top-Level-Funktion: Eine Funktion, die direkt im Hauptbereich des Skripts (außerhalb anderer Funktionen) definiert ist und dadurch im gesamten Programm aufgerufen werden kann.
+
+Early Return (Früher Ausstieg): Das vorzeitige Beenden einer Funktion über return – praktisch, kann aber dazu führen, dass Code am Ende der Funktion (wie speichereZustand();) übersprungen wird, wenn er davor steht.
+
