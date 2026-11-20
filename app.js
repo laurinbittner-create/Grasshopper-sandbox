@@ -19,6 +19,7 @@ function zoomIn() {
     if (scale < maxScale) {
         scale += 0.1;
         updateZoom();
+        speichereZustand();
     }
 }
 
@@ -26,6 +27,7 @@ function zoomOut() {
     if (scale > minScale) {
         scale -= 0.1;
         updateZoom();
+        speichereZustand();
     }
 }
 
@@ -151,6 +153,12 @@ let aktiveCanvasNodes = [];
 let verbindungen = [];
 let selectedPin = null;
 
+// Zustand für sauberes Drag-and-Drop ohne doppelte Window-Listener
+let activeDragNode = null;
+let activeDragCard = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
 const componentSelect = document.getElementById('componentSelect');
 const addBtn = document.getElementById('addBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -162,22 +170,23 @@ const wiresGroup = document.getElementById('wiresGroup');
 
 // Dropdown nach Kategorien gruppiert befüllen
 const kategorien = [...new Set(bausteinBibliothek.map(b => b.kategorie))];
-kategorien.forEach(kat => {
-    const optgroup = document.createElement('optgroup');
-    optgroup.label = kat;
+if (componentSelect) {
+    kategorien.forEach(kat => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = kat;
 
-    bausteinBibliothek.filter(b => b.kategorie === kat).forEach(b => {
-        const option = document.createElement('option');
-        option.value = b.id;
-        option.textContent = b.name;
-        optgroup.appendChild(option);
+        bausteinBibliothek.filter(b => b.kategorie === kat).forEach(b => {
+            const option = document.createElement('option');
+            option.value = b.id;
+            option.textContent = b.name;
+            optgroup.appendChild(option);
+        });
+
+        componentSelect.appendChild(optgroup);
     });
-
-    componentSelect.appendChild(optgroup);
-});
+}
 
 // Hilfsfunktion: Macht aus einem Einzelwert, Array oder Baum ein einheitliches Tree-Objekt
-// Struktur: { branches: [ { path: "{0}", items: [...] } ] }
 function normalisiereTree(val) {
     if (val && typeof val === "object" && Array.isArray(val.branches)) {
         return {
@@ -230,7 +239,6 @@ function evaluiereNetzwerk() {
         }
     });
 
-    // Mehrere Durchläufe, damit Ketten (z. B. Slider -> Addition -> Division -> Tree) sauber durchlaufen
     const durchlaeufe = Math.max(2, aktiveCanvasNodes.length + 1);
 
     for (let step = 0; step < durchlaeufe; step++) {
@@ -252,6 +260,7 @@ function evaluiereNetzwerk() {
         aktiveCanvasNodes.forEach((node, nodeIdx) => {
             node.fehler = "None";
 
+            // --- MATH ---
             if (
                 node.id === 'addition' ||
                 node.id === 'multiplication' ||
@@ -262,43 +271,44 @@ function evaluiereNetzwerk() {
                 const keyB = `${nodeIdx}-1`;
                 const outKey = `${nodeIdx}-0`;
 
-                // Falls ein verbundener Eingang aus einem Fehlerzustand (z. B. Division durch 0) kommt
                 if (inputHatFehler[keyA] || inputHatFehler[keyB]) {
                     node.fehler = "Upstream error";
                     node.python = `ergebnis = None  # Fehler aus Vorgänger-Baustein`;
                     nodeOutputs[outKey] = undefined;
                     nodeFehlerOutputs.add(outKey);
-                    return;
-                }
+                } else {
+                    const valA = extrahiereZahl(nodeInputs[keyA], 0);
+                    const valB = extrahiereZahl(nodeInputs[keyB], 0);
 
-                const valA = extrahiereZahl(nodeInputs[keyA], 0);
-                const valB = extrahiereZahl(nodeInputs[keyB], 0);
-
-                let res = 0;
-                if (node.id === 'addition') {
-                    res = valA + valB;
-                    node.python = `ergebnis = ${valA} + ${valB} (${res})`;
-                } else if (node.id === 'subtraction') {
-                    res = valA - valB;
-                    node.python = `ergebnis = ${valA} - ${valB} (${res})`;
-                } else if (node.id === 'multiplication') {
-                    res = valA * valB;
-                    node.python = `ergebnis = ${valA} * ${valB} (${res})`;
-                } else if (node.id === 'division') {
-                    if (valB === 0) {
-                        node.fehler = "Division by zero";
-                        node.python = `ergebnis = ${valA} / ${valB}`;
-                        nodeOutputs[outKey] = undefined;
-                        nodeFehlerOutputs.add(outKey);
-                        return;
-                    } else {
-                        res = valA / valB;
-                        node.python = `ergebnis = ${valA} / ${valB} (${res.toFixed(2)})`;
+                    if (node.id === 'addition') {
+                        const res = valA + valB;
+                        node.python = `ergebnis = ${valA} + ${valB} (${res})`;
+                        nodeFehlerOutputs.delete(outKey);
+                        nodeOutputs[outKey] = res;
+                    } else if (node.id === 'subtraction') {
+                        const res = valA - valB;
+                        node.python = `ergebnis = ${valA} - ${valB} (${res})`;
+                        nodeFehlerOutputs.delete(outKey);
+                        nodeOutputs[outKey] = res;
+                    } else if (node.id === 'multiplication') {
+                        const res = valA * valB;
+                        node.python = `ergebnis = ${valA} * ${valB} (${res})`;
+                        nodeFehlerOutputs.delete(outKey);
+                        nodeOutputs[outKey] = res;
+                    } else if (node.id === 'division') {
+                        if (valB === 0) {
+                            node.fehler = "Division by zero";
+                            node.python = `ergebnis = ${valA} / ${valB}`;
+                            nodeOutputs[outKey] = undefined;
+                            nodeFehlerOutputs.add(outKey);
+                        } else {
+                            const res = valA / valB;
+                            node.python = `ergebnis = ${valA} / ${valB} (${res.toFixed(2)})`;
+                            nodeFehlerOutputs.delete(outKey);
+                            nodeOutputs[outKey] = res;
+                        }
                     }
                 }
-
-                nodeFehlerOutputs.delete(outKey);
-                nodeOutputs[outKey] = res;
             }
 
             // --- SETS / DATA TREES ---
@@ -317,26 +327,23 @@ function evaluiereNetzwerk() {
                     node.python = `ergebnis = None  # Fehler aus Vorgänger-Baustein`;
                     nodeOutputs[outKey] = undefined;
                     nodeFehlerOutputs.add(outKey);
-                    return;
-                }
-
-                const gesammelteItems = [];
-                eingehendeKabel.forEach(v => {
-                    const raw = nodeOutputs[`${v.fromNode}-${v.fromPin}`];
-                    const tree = normalisiereTree(raw);
-                    tree.branches.forEach(b => {
-                        gesammelteItems.push(...b.items);
+                } else {
+                    const gesammelteItems = [];
+                    eingehendeKabel.forEach(v => {
+                        const raw = nodeOutputs[`${v.fromNode}-${v.fromPin}`];
+                        const tree = normalisiereTree(raw);
+                        tree.branches.forEach(b => {
+                            gesammelteItems.push(...b.items);
+                        });
                     });
-                });
 
-                const mergedTree = {
-                    branches: [{ path: "{0}", items: gesammelteItems }]
-                };
-
-                node.fehler = "None";
-                nodeFehlerOutputs.delete(outKey);
-                node.python = `ergebnis = ${JSON.stringify(gesammelteItems)}`;
-                nodeOutputs[outKey] = mergedTree;
+                    node.fehler = "None";
+                    nodeFehlerOutputs.delete(outKey);
+                    node.python = `ergebnis = ${JSON.stringify(gesammelteItems)}`;
+                    nodeOutputs[outKey] = {
+                        branches: [{ path: "{0}", items: gesammelteItems }]
+                    };
+                }
             } else if (node.id === "graft") {
                 const inputKey = `${nodeIdx}-0`;
                 const outputKey = `${nodeIdx}-0`;
@@ -346,34 +353,32 @@ function evaluiereNetzwerk() {
                     node.python = `zweig = None  # Fehler aus Vorgänger-Baustein`;
                     nodeOutputs[outputKey] = undefined;
                     nodeFehlerOutputs.add(outputKey);
-                    return;
-                }
-
-                const tree = normalisiereTree(nodeInputs[inputKey]);
-
-                if (tree.branches.length === 0) {
-                    node.fehler = "Data matching failed";
-                    node.python = `zweig = []`;
-                    nodeOutputs[outputKey] = { branches: [] };
-                    nodeFehlerOutputs.delete(outputKey);
                 } else {
-                    const neueBranches = [];
-                    const pythonListe = [];
+                    const tree = normalisiereTree(nodeInputs[inputKey]);
+                    if (tree.branches.length === 0) {
+                        node.fehler = "Data matching failed";
+                        node.python = `zweig = []`;
+                        nodeOutputs[outputKey] = { branches: [] };
+                        nodeFehlerOutputs.delete(outputKey);
+                    } else {
+                        const neueBranches = [];
+                        const pythonListe = [];
 
-                    tree.branches.forEach((b, bIdx) => {
-                        b.items.forEach((item, iIdx) => {
-                            neueBranches.push({
-                                path: `{${bIdx};${iIdx}}`,
-                                items: [item]
+                        tree.branches.forEach((b, bIdx) => {
+                            b.items.forEach((item, iIdx) => {
+                                neueBranches.push({
+                                    path: `{${bIdx};${iIdx}}`,
+                                    items: [item]
+                                });
+                                pythonListe.push([item]);
                             });
-                            pythonListe.push([item]);
                         });
-                    });
 
-                    node.fehler = "None";
-                    nodeFehlerOutputs.delete(outputKey);
-                    node.python = `zweig = ${JSON.stringify(pythonListe)}`;
-                    nodeOutputs[outputKey] = { branches: neueBranches };
+                        node.fehler = "None";
+                        nodeFehlerOutputs.delete(outputKey);
+                        node.python = `zweig = ${JSON.stringify(pythonListe)}`;
+                        nodeOutputs[outputKey] = { branches: neueBranches };
+                    }
                 }
             } else if (node.id === "flatten") {
                 const inputKey = `${nodeIdx}-0`;
@@ -384,22 +389,20 @@ function evaluiereNetzwerk() {
                     node.python = `flach = None  # Fehler aus Vorgänger-Baustein`;
                     nodeOutputs[outputKey] = undefined;
                     nodeFehlerOutputs.add(outputKey);
-                    return;
+                } else {
+                    const tree = normalisiereTree(nodeInputs[inputKey]);
+                    const flachItems = [];
+                    tree.branches.forEach(b => {
+                        flachItems.push(...b.items);
+                    });
+
+                    node.fehler = "None";
+                    nodeFehlerOutputs.delete(outputKey);
+                    node.python = `flach = ${JSON.stringify(flachItems)}`;
+                    nodeOutputs[outputKey] = {
+                        branches: [{ path: "{0}", items: flachItems }]
+                    };
                 }
-
-                const tree = normalisiereTree(nodeInputs[inputKey]);
-                const flachItems = [];
-
-                tree.branches.forEach(b => {
-                    flachItems.push(...b.items);
-                });
-
-                node.fehler = "None";
-                nodeFehlerOutputs.delete(outputKey);
-                node.python = `flach = ${JSON.stringify(flachItems)}`;
-                nodeOutputs[outputKey] = {
-                    branches: [{ path: "{0}", items: flachItems }]
-                };
             } else if (node.id === "listitem") {
                 const keyList = `${nodeIdx}-0`;
                 const keyIndex = `${nodeIdx}-1`;
@@ -410,24 +413,23 @@ function evaluiereNetzwerk() {
                     node.python = `element = None  # Fehler aus Vorgänger-Baustein`;
                     nodeOutputs[keyOut] = undefined;
                     nodeFehlerOutputs.add(keyOut);
-                    return;
-                }
-
-                const idx = Math.trunc(extrahiereZahl(nodeInputs[keyIndex], 0));
-                const tree = normalisiereTree(nodeInputs[keyList]);
-                const alleItems = tree.branches.flatMap(b => b.items);
-
-                if (alleItems.length === 0 || idx < 0 || idx >= alleItems.length) {
-                    node.fehler = "Index out of range";
-                    node.python = `element = liste[${idx}]  # Fehler: Index out of range`;
-                    nodeOutputs[keyOut] = undefined;
-                    nodeFehlerOutputs.add(keyOut);
                 } else {
-                    const treffer = alleItems[idx];
-                    node.fehler = "None";
-                    nodeFehlerOutputs.delete(keyOut);
-                    node.python = `element = liste[${idx}]  # -> ${JSON.stringify(treffer)}`;
-                    nodeOutputs[keyOut] = treffer;
+                    const idx = Math.trunc(extrahiereZahl(nodeInputs[keyIndex], 0));
+                    const tree = normalisiereTree(nodeInputs[keyList]);
+                    const alleItems = tree.branches.flatMap(b => b.items);
+
+                    if (alleItems.length === 0 || idx < 0 || idx >= alleItems.length) {
+                        node.fehler = "Index out of range";
+                        node.python = `element = liste[${idx}]  # Fehler: Index out of range`;
+                        nodeOutputs[keyOut] = undefined;
+                        nodeFehlerOutputs.add(keyOut);
+                    } else {
+                        const treffer = alleItems[idx];
+                        node.fehler = "None";
+                        nodeFehlerOutputs.delete(keyOut);
+                        node.python = `element = liste[${idx}]  # -> ${JSON.stringify(treffer)}`;
+                        nodeOutputs[keyOut] = treffer;
+                    }
                 }
             }
 
@@ -460,70 +462,70 @@ function evaluiereNetzwerk() {
                     node.python = `# Fehler aus Vorgänger-Baustein`;
                     nodeOutputs[outKey] = undefined;
                     nodeFehlerOutputs.add(outKey);
-                    return;
-                }
-
-                const ersterInputKey = eingehendeKabel.length > 0
-                    ? `${eingehendeKabel[0].toNode}-${eingehendeKabel[0].toPin}`
-                    : null;
-                const rawIn = ersterInputKey ? nodeInputs[ersterInputKey] : undefined;
-
-                if (node.id === "unit_x" || node.id === "unit_y" || node.id === "unit_z") {
-                    const faktor = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 1);
-                    const achse = node.id === "unit_x" ? "X" : node.id === "unit_y" ? "Y" : "Z";
-                    node.fehler = "None";
-                    nodeFehlerOutputs.delete(outKey);
-                    node.python = `vec_${achse.toLowerCase()} = Vector${achse}(${faktor})`;
-                    nodeOutputs[outKey] = faktor;
-                } else if (node.id === "rectangle") {
-                    const xVal = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 100);
-                    const yVal = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 100);
-                    node.fehler = "None";
-                    nodeFehlerOutputs.delete(outKey);
-                    node.python = `rect = Rectangle(w=${xVal}, h=${yVal})`;
-                    nodeOutputs[outKey] = normalisiereTree([xVal, yVal]);
-                } else if (node.id === "extrude") {
-                    const baseTree = normalisiereTree(nodeInputs[`${nodeIdx}-0`]);
-                    const richtungVal = nodeInputs[`${nodeIdx}-1`];
-                    const hoehe = richtungVal !== undefined ? extrahiereZahl(richtungVal, 300) : 300;
-                    const basisItems = baseTree.branches.flatMap(b => b.items);
-
-                    if (basisItems.length === 0) {
-                        node.fehler = "None";
-                        nodeFehlerOutputs.delete(outKey);
-                        node.python = `extrude = []  # h=${hoehe}`;
-                        nodeOutputs[outKey] = { branches: [] };
-                    } else {
-                        const branches = baseTree.branches.map((b, bIdx) => ({
-                            path: b.path || `{${bIdx}}`,
-                            items: b.items.map(item => ({
-                                basis: item,
-                                hoehe: hoehe
-                            }))
-                        }));
-
-                        node.fehler = "None";
-                        nodeFehlerOutputs.delete(outKey);
-                        node.python = `extrude(${JSON.stringify(basisItems)}, h=${hoehe})  # ${branches.length} Zweig(e)`;
-                        nodeOutputs[outKey] = { branches };
-                    }
                 } else {
-                    const tree = normalisiereTree(rawIn);
-                    node.fehler = "None";
-                    nodeFehlerOutputs.delete(outKey);
-                    if (tree.branches.length > 0) {
-                        const items = tree.branches.flatMap(b => b.items);
-                        node.python = `${node.id}(${JSON.stringify(items)})  # ${tree.branches.length} Zweig(e)`;
-                        nodeOutputs[outKey] = tree;
+                    const ersterInputKey = eingehendeKabel.length > 0
+                        ? `${eingehendeKabel[0].toNode}-${eingehendeKabel[0].toPin}`
+                        : null;
+                    const rawIn = ersterInputKey ? nodeInputs[ersterInputKey] : undefined;
+
+                    if (node.id === "unit_x" || node.id === "unit_y" || node.id === "unit_z") {
+                        const faktor = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 1);
+                        const achse = node.id === "unit_x" ? "X" : node.id === "unit_y" ? "Y" : "Z";
+                        node.fehler = "None";
+                        nodeFehlerOutputs.delete(outKey);
+                        node.python = `vec_${achse.toLowerCase()} = Vector${achse}(${faktor})`;
+                        nodeOutputs[outKey] = faktor;
+                    } else if (node.id === "rectangle") {
+                        const xVal = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 100);
+                        const yVal = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 100);
+                        node.fehler = "None";
+                        nodeFehlerOutputs.delete(outKey);
+                        node.python = `rect = Rectangle(w=${xVal}, h=${yVal})`;
+                        nodeOutputs[outKey] = normalisiereTree([xVal, yVal]);
+                    } else if (node.id === "extrude") {
+                        const baseTree = normalisiereTree(nodeInputs[`${nodeIdx}-0`]);
+                        const richtungVal = nodeInputs[`${nodeIdx}-1`];
+                        const hoehe = richtungVal !== undefined ? extrahiereZahl(richtungVal, 300) : 300;
+                        const basisItems = baseTree.branches.flatMap(b => b.items);
+
+                        if (basisItems.length === 0) {
+                            node.fehler = "None";
+                            nodeFehlerOutputs.delete(outKey);
+                            node.python = `extrude = []  # h=${hoehe}`;
+                            nodeOutputs[outKey] = { branches: [] };
+                        } else {
+                            const branches = baseTree.branches.map((b, bIdx) => ({
+                                path: b.path || `{${bIdx}}`,
+                                items: b.items.map(item => ({
+                                    basis: item,
+                                    hoehe: hoehe
+                                }))
+                            }));
+
+                            node.fehler = "None";
+                            nodeFehlerOutputs.delete(outKey);
+                            node.python = `extrude(${JSON.stringify(basisItems)}, h=${hoehe})  # ${branches.length} Zweig(e)`;
+                            nodeOutputs[outKey] = { branches };
+                        }
                     } else {
-                        node.python = `${node.id}([])  # leer`;
-                        nodeOutputs[outKey] = { branches: [] };
+                        const tree = normalisiereTree(rawIn);
+                        node.fehler = "None";
+                        nodeFehlerOutputs.delete(outKey);
+                        if (tree.branches.length > 0) {
+                            const items = tree.branches.flatMap(b => b.items);
+                            node.python = `${node.id}(${JSON.stringify(items)})  # ${tree.branches.length} Zweig(e)`;
+                            nodeOutputs[outKey] = tree;
+                        } else {
+                            node.python = `${node.id}([])  # leer`;
+                            nodeOutputs[outKey] = { branches: [] };
+                        }
                     }
                 }
             }
         });
     }
 }
+
 const STORAGE_KEY = "og_node_simulator_state_v1";
 
 function speichereZustand() {
@@ -592,6 +594,34 @@ window.importiereNetzwerkJSON = function(event) {
     };
     reader.readAsText(file);
 };
+
+function beginDrag(nodeObj, cardEl, clientX, clientY) {
+    activeDragNode = nodeObj;
+    activeDragCard = cardEl;
+    dragOffsetX = clientX - (nodeObj.x * scale);
+    dragOffsetY = clientY - (nodeObj.y * scale);
+    cardEl.style.zIndex = 100;
+    document.querySelectorAll('.draggable-node').forEach(n => {
+        if (n !== cardEl) n.style.zIndex = 10;
+    });
+}
+
+function moveActiveDrag(clientX, clientY) {
+    if (!activeDragNode || !activeDragCard) return;
+    activeDragNode.x = (clientX - dragOffsetX) / scale;
+    activeDragNode.y = (clientY - dragOffsetY) / scale;
+    activeDragCard.style.left = activeDragNode.x + 'px';
+    activeDragCard.style.top = activeDragNode.y + 'px';
+    drawWires();
+}
+
+function endActiveDrag() {
+    if (!activeDragNode && !activeDragCard) return;
+    activeDragNode = null;
+    activeDragCard = null;
+    speichereZustand();
+}
+
 function renderCanvas() {
     evaluiereNetzwerk();
     const existingNodes = canvasWorkspace.querySelectorAll('.draggable-node');
@@ -689,61 +719,24 @@ function renderCanvas() {
             </div>
         `;
 
-        let isDragging = false, startX, startY;
-
-        function startDrag(clientX, clientY) {
-            isDragging = true;
-            startX = clientX - (b.x * scale);
-            startY = clientY - (b.y * scale);
-            nodeCard.style.zIndex = 100;
-            document.querySelectorAll('.draggable-node').forEach(n => { if (n !== nodeCard) n.style.zIndex = 10; });
-        }
-
-        function onMove(clientX, clientY) {
-            if (!isDragging) return;
-            b.x = (clientX - startX) / scale;
-            b.y = (clientY - startY) / scale;
-            nodeCard.style.left = b.x + 'px';
-            nodeCard.style.top = b.y + 'px';
-            drawWires();
-        }
-
-       // Maus-Events
+        // Maus-Event auf der Node
         nodeCard.addEventListener('mousedown', (e) => {
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.classList.contains('pin') || e.target.closest('code')) return;
-            startDrag(e.clientX, e.clientY);
+            beginDrag(b, nodeCard, e.clientX, e.clientY);
             e.stopPropagation();
         });
-        window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
-        window.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                speichereZustand();
-            }
-        });
 
-        // Touch-Events (Handy / Tablet)
+        // Touch-Event auf der Node (Handy / Tablet)
         nodeCard.addEventListener('touchstart', (e) => {
             if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.classList.contains('pin') || e.target.closest('code')) return;
             const touch = e.touches[0];
-            startDrag(touch.clientX, touch.clientY);
+            beginDrag(b, nodeCard, touch.clientX, touch.clientY);
             e.stopPropagation();
         }, { passive: true });
 
-        window.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            const touch = e.touches[0];
-            onMove(touch.clientX, touch.clientY);
-            e.preventDefault();
-        }, { passive: false });
+        nodesContainer.appendChild(nodeCard);
+    });
 
-        window.addEventListener('touchend', () => {
-            if (isDragging) {
-                isDragging = false;
-                speichereZustand();
-            }
-        });
-    }); // 
     document.querySelectorAll('.pin').forEach(pinElement => {
         pinElement.addEventListener('click', (e) => {
             handlePinClick(e.target);
@@ -753,7 +746,18 @@ function renderCanvas() {
 
     drawWires();
     speichereZustand();
-} //
+}
+
+// Einmalige globale Drag-Listener auf window
+window.addEventListener('mousemove', (e) => moveActiveDrag(e.clientX, e.clientY));
+window.addEventListener('mouseup', () => endActiveDrag());
+window.addEventListener('touchmove', (e) => {
+    if (!activeDragNode) return;
+    const touch = e.touches[0];
+    moveActiveDrag(touch.clientX, touch.clientY);
+    e.preventDefault();
+}, { passive: false });
+window.addEventListener('touchend', () => endActiveDrag());
 
 function drawWires() {
     wiresGroup.innerHTML = '';
@@ -825,25 +829,26 @@ function handlePinClick(pin) {
     }
 }
 
-addBtn.addEventListener('click', () => {
-    const selectedId = componentSelect.value;
-    if (!selectedId) return;
-    const bausteinObjekt = bausteinBibliothek.find(b => b.id === selectedId);
-    if (bausteinObjekt) {
-        // Berechnet den aktuellen sichtbaren Bereich (inkl. Zoom & Scrollen)
-        const viewX = canvasWorkspace.scrollLeft / scale + 50;
-        const viewY = canvasWorkspace.scrollTop / scale + 50;
+if (addBtn) {
+    addBtn.addEventListener('click', () => {
+        const selectedId = componentSelect ? componentSelect.value : null;
+        if (!selectedId) return;
+        const bausteinObjekt = bausteinBibliothek.find(b => b.id === selectedId);
+        if (bausteinObjekt) {
+            const viewX = canvasWorkspace.scrollLeft / scale + 50;
+            const viewY = canvasWorkspace.scrollTop / scale + 50;
 
-        aktiveCanvasNodes.push({
-            ...bausteinObjekt,
-            inputs: Array.isArray(bausteinObjekt.inputs) ? [...bausteinObjekt.inputs] : [],
-            outputs: Array.isArray(bausteinObjekt.outputs) ? [...bausteinObjekt.outputs] : [],
-            x: viewX + (aktiveCanvasNodes.length * 30) % 300,
-            y: viewY + (aktiveCanvasNodes.length * 30) % 200
-        });
-        renderCanvas();
-    }
-});
+            aktiveCanvasNodes.push({
+                ...bausteinObjekt,
+                inputs: Array.isArray(bausteinObjekt.inputs) ? [...bausteinObjekt.inputs] : [],
+                outputs: Array.isArray(bausteinObjekt.outputs) ? [...bausteinObjekt.outputs] : [],
+                x: viewX + (aktiveCanvasNodes.length * 30) % 300,
+                y: viewY + (aktiveCanvasNodes.length * 30) % 200
+            });
+            renderCanvas();
+        }
+    });
+}
 
 window.removeNode = function(event, index) {
     event.stopPropagation();
@@ -852,16 +857,21 @@ window.removeNode = function(event, index) {
     renderCanvas();
 };
 
-clearBtn.addEventListener('click', () => {
-    aktiveCanvasNodes = [];
-    verbindungen = [];
-    selectedPin = null;
-    renderCanvas();
-});
+if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+        aktiveCanvasNodes = [];
+        verbindungen = [];
+        selectedPin = null;
+        renderCanvas();
+        speichereZustand();
+    });
+}
 
-canvasWorkspace.addEventListener('scroll', () => {
-    drawWires();
-});
+if (canvasWorkspace) {
+    canvasWorkspace.addEventListener('scroll', () => {
+        drawWires();
+    });
+}
 
 window.updateSliderValue = function(nodeIndex, val) {
     const numVal = parseFloat(val);
@@ -888,8 +898,9 @@ window.updateSliderValue = function(nodeIndex, val) {
             statusEl.className = node.fehler === 'None' ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
         }
     });
-    speicherZustand();
-}; 
+
+    speichereZustand();
+};
 
 window.addMergeInput = function(nodeIndex) {
     const node = aktiveCanvasNodes[nodeIndex];
@@ -934,4 +945,4 @@ document.addEventListener('DOMContentLoaded', () => {
     ladeZustand();
     updateZoom();
     renderCanvas();
-}); 
+});

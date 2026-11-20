@@ -112,3 +112,5 @@ Top-Level-Funktion: Eine Funktion, die direkt im Hauptbereich des Skripts (auße
 
 Early Return (Früher Ausstieg): Das vorzeitige Beenden einer Funktion über return – praktisch, kann aber dazu führen, dass Code am Ende der Funktion (wie speichereZustand();) übersprungen wird, wenn er davor steht.
 
+Funktionsaufruf-Abschluss (});): Beendet eine Methode/Funktion, der eine Callback-Funktion (wie forEach) als Argument übergeben wurde
+
