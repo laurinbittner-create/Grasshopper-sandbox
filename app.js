@@ -431,7 +431,7 @@ function evaluiereNetzwerk() {
                 }
             }
 
-            // --- GEOMETRIE / VEKTOR / TRANSFORMATION (Durchreich-Logik) ---
+            // --- GEOMETRIE / VEKTOR / TRANSFORMATION (Modell-als-Text) ---
             if (
                 node.id === "unit_x" ||
                 node.id === "unit_y" ||
@@ -473,25 +473,50 @@ function evaluiereNetzwerk() {
                     const achse = node.id === "unit_x" ? "X" : node.id === "unit_y" ? "Y" : "Z";
                     node.fehler = "None";
                     nodeFehlerOutputs.delete(outKey);
-                    node.python = `vektor_${achse.toLowerCase()} = ${achse}(${faktor})`;
+                    node.python = `vec_${achse.toLowerCase()} = Vector${achse}(${faktor})`;
                     nodeOutputs[outKey] = faktor;
                 } else if (node.id === "rectangle") {
-                    const xVal = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 10);
-                    const yVal = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 10);
+                    const xVal = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 100);
+                    const yVal = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 100);
                     node.fehler = "None";
                     nodeFehlerOutputs.delete(outKey);
-                    node.python = `rechteck = [x=${xVal}, y=${yVal}]`;
+                    node.python = `rect = Rectangle(w=${xVal}, h=${yVal})`;
                     nodeOutputs[outKey] = normalisiereTree([xVal, yVal]);
+                } else if (node.id === "extrude") {
+                    const baseTree = normalisiereTree(nodeInputs[`${nodeIdx}-0`]);
+                    const richtungVal = nodeInputs[`${nodeIdx}-1`];
+                    const hoehe = richtungVal !== undefined ? extrahiereZahl(richtungVal, 300) : 300;
+                    const basisItems = baseTree.branches.flatMap(b => b.items);
+
+                    if (basisItems.length === 0) {
+                        node.fehler = "None";
+                        nodeFehlerOutputs.delete(outKey);
+                        node.python = `extrude = []  # h=${hoehe}`;
+                        nodeOutputs[outKey] = { branches: [] };
+                    } else {
+                        const branches = baseTree.branches.map((b, bIdx) => ({
+                            path: b.path || `{${bIdx}}`,
+                            items: b.items.map(item => ({
+                                basis: item,
+                                hoehe: hoehe
+                            }))
+                        }));
+
+                        node.fehler = "None";
+                        nodeFehlerOutputs.delete(outKey);
+                        node.python = `extrude(${JSON.stringify(basisItems)}, h=${hoehe})  # ${branches.length} Zweig(e)`;
+                        nodeOutputs[outKey] = { branches };
+                    }
                 } else {
                     const tree = normalisiereTree(rawIn);
                     node.fehler = "None";
                     nodeFehlerOutputs.delete(outKey);
                     if (tree.branches.length > 0) {
                         const items = tree.branches.flatMap(b => b.items);
-                        node.python = `${node.id}_daten = ${JSON.stringify(items)}`;
+                        node.python = `${node.id}(${JSON.stringify(items)})  # ${tree.branches.length} Zweig(e)`;
                         nodeOutputs[outKey] = tree;
                     } else {
-                        node.python = `${node.id}_daten = []`;
+                        node.python = `${node.id}([])  # leer`;
                         nodeOutputs[outKey] = { branches: [] };
                     }
                 }
