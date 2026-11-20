@@ -524,7 +524,74 @@ function evaluiereNetzwerk() {
         });
     }
 }
+const STORAGE_KEY = "og_node_simulator_state_v1";
 
+function speichereZustand() {
+    try {
+        const payload = {
+            aktiveCanvasNodes,
+            verbindungen,
+            scale
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (err) {
+        console.warn("Speichern in localStorage fehlgeschlagen:", err);
+    }
+}
+
+function ladeZustand() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.aktiveCanvasNodes) && Array.isArray(data.verbindungen)) {
+            aktiveCanvasNodes = data.aktiveCanvasNodes;
+            verbindungen = data.verbindungen;
+            if (typeof data.scale === "number") {
+                scale = data.scale;
+            }
+            return true;
+        }
+    } catch (err) {
+        console.warn("Laden aus localStorage fehlgeschlagen:", err);
+    }
+    return false;
+}
+
+window.exportiereNetzwerkJSON = function() {
+    const blob = new Blob(
+        [JSON.stringify({ aktiveCanvasNodes, verbindungen, scale }, null, 2)],
+        { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "og-data-tree-setup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+window.importiereNetzwerkJSON = function(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (Array.isArray(data.aktiveCanvasNodes) && Array.isArray(data.verbindungen)) {
+                aktiveCanvasNodes = data.aktiveCanvasNodes;
+                verbindungen = data.verbindungen;
+                if (typeof data.scale === "number") scale = data.scale;
+                speichereZustand();
+                updateZoom();
+                renderCanvas();
+            }
+        } catch (err) {
+            console.warn("JSON-Import fehlgeschlagen:", err);
+        }
+    };
+    reader.readAsText(file);
+};
 function renderCanvas() {
     evaluiereNetzwerk();
     const existingNodes = canvasWorkspace.querySelectorAll('.draggable-node');
@@ -677,6 +744,7 @@ function renderCanvas() {
     });
 
     drawWires();
+    speichereZustand();
 }
 
 function drawWires() {
@@ -854,5 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnOut.addEventListener('touchend', (e) => { e.preventDefault(); zoomOut(); });
     }
 
+    ladeZustand();
     updateZoom();
+    renderCanvas();
 });

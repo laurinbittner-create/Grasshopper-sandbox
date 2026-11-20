@@ -100,3 +100,12 @@ Ursprung / Ebene (Plane/Origin): In Grasshopper bestimmt eine Ebene (Plane) nich
 
 Quell-Pin vs. Ziel-Pin (fromPin / toPin): Der Quell-Pin liefert den Wert aus dem Vorgänger-Baustein (nodeOutputs), während der Ziel-Pin den Eingang am aktuellen Baustein (nodeInputs) beschreibt.
 
+Graft (Verzweigen): Zerlegt eine Liste in einzelne Äste, sodass jedes Element einen eigenen Pfad ({...}) erhält und spätere Operationen elementweise/astweise sauber zuordenbar bleiben.
+
+Umfangskette (500 / 900 / 500 / 900): Das geordnete Bündeln der vier Wandlängen eines rechteckigen/kompakten Grundrisses in einer Liste, damit jedes Element über seinen Index (0 bis 3) eindeutig einer Wand zugeordnet bleibt.
+
+DOMContentLoaded: Der Zeitpunkt im Browser, an dem das HTML-Dokument vollständig geladen und geparst ist – der ideale Ort, um gespeicherte Zustände einzulesen und die Oberfläche zu initialisieren.
+
+Funktionsende (Function Exit): Die letzte Zeile vor der schließenden Klammer } einer Funktion – ideal für Aufräum- oder Speicheraufrufe, nachdem alle DOM- und Zustandswerte aktuell sind.
+
+Top-Level-Funktion: Eine Funktion, die direkt im Hauptbereich des Skripts (außerhalb anderer Funktionen) definiert ist und dadurch im gesamten Programm aufgerufen werden kann.
