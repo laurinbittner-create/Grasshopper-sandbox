@@ -800,8 +800,9 @@ function evaluiereNetzwerk() {
                 let res = 0;
 
                 if (node.id === "negative") {
-                    res = -a;
-                    node.python = `neg = ${res}`;
+                 res = -a;
+                const hinweis = res < 0 ? "nach INNEN (z.B. Offset)" : "nach AUSSEN";
+                node.python = `neg = ${res}  # -> ${hinweis}`;
                 } else if (node.id === "abs") {
                     res = Math.abs(a);
                     node.python = `abs_val = ${res}`;
@@ -920,10 +921,11 @@ function evaluiereNetzwerk() {
                     node.python = `eval_pt = ${pos}  (von ${lenOrCrv})`;
                     nodeOutputs[outKey] = pos;
                 } else if (node.id === "offset_curve") {
-                    const base = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 900);
-                    const dist = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 24);
-                    node.python = `offset = ${base} (d=${dist})`;
-                    nodeOutputs[outKey] = { basis: base, offset: dist };
+                const base = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 900);
+                const dist = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], -40);
+                const richtung = dist < 0 ? "INNEN (negativ)" : dist > 0 ? "AUSSEN (positiv)" : "0 (kein Offset)";
+                node.python = `offset(${base}, d=${dist})  # Richtung: ${richtung}`;
+                nodeOutputs[outKey] = { basis: base, offset: dist, richtung };
                 } else if (node.id === "box_2pt") {
                     const w = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 300);
                     const d = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 40);
