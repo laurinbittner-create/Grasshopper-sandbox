@@ -114,3 +114,11 @@ Early Return (Früher Ausstieg): Das vorzeitige Beenden einer Funktion über ret
 
 Funktionsaufruf-Abschluss (});): Beendet eine Methode/Funktion, der eine Callback-Funktion (wie forEach) als Argument übergeben wurde
 
+Data Tree: Grasshoppers mehrstufige Baumstruktur aus Pfaden ({0}, {0;0}, …) und Listen – sorgt dafür, dass Geometrie pro Objekt oder pro Wand sauber getrennt bleibt.
+
+Panel: Eine Grasshopper-Komponente zum Anzeigen von Texten/Datenbäumen oder zum Eingeben mehrerer Werte (z. B. 500; 900; 500; 900).
+
+Restmaß-Logik (Subtraction): Hilft beim architektonischen Prüfen von Öffnungen – etwa um Brüstungs-/Sturzbereiche (280 - 120) oder verbleibende Wandabschnitte (900 - 300) nachzuvollziehen.
+
+Evaluate Length: Bestimmt einen bestimmten Punkt oder eine Position entlang einer Kurve/Strecke (häufig über einen relativen Faktor wie 0.5 für die Mitte oder eine konkrete Länge).
+

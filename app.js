@@ -31,19 +31,59 @@ function zoomOut() {
     }
 }
 
-// Erweiterte Grasshopper-Baustein-Bibliothek mit allen Komponenten
+// Erweiterte Grasshopper-Baustein-Bibliothek (echte Grasshopper-Standardkomponenten)
 const bausteinBibliothek = [
     // 1. PARAMS (Parameter & Eingaben)
     {
         id: "slider", name: "Number Slider", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
         inputs: [], outputs: ["v: Value"],
-        logik: "Gibt einen numerischen Wert aus (anpassbar für Min/Max/Prozent).", python: "wert = 5.0", fehler: "None",
+        logik: "Gibt einen numerischen Wert aus (anpassbar für Min/Max/Step).", python: "wert = 5.0", fehler: "None",
         min: 0, max: 100, step: 1
+    },
+    {
+        id: "panel", name: "Panel", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["in: Input"], outputs: ["out: Text/Data"],
+        logik: "Zeigt ankommende Werte/Bäume an oder leitet sie als Datenstrom weiter.", python: "panel_out = data_in", fehler: "None"
     },
     {
         id: "point", name: "Point", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
         inputs: ["x: X", "y: Y", "z: Z"], outputs: ["pt: Point"],
-        logik: "Erzeugt einen festen Koordinatenpunkt im Raum.", python: "punkt = rs.AddPoint(x, y, z)", fehler: "None"
+        logik: "Erzeugt einen Punkt im Raum aus X-, Y- und Z-Koordinaten.", python: "punkt = rs.AddPoint(x, y, z)", fehler: "None"
+    },
+    {
+        id: "integer", name: "Integer", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["i: Value"], outputs: ["i: Integer"],
+        logik: "Rundet/konvertiert Zahlen zu Ganzzahlen (z. B. für Listen-Indizes).", python: "ganzzahl = int(wert)", fehler: "None"
+    },
+    {
+        id: "number", name: "Number", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["n: Value"], outputs: ["n: Number"],
+        logik: "Leitet numerische Werte als Fließkommazahl weiter.", python: "zahl = float(wert)", fehler: "None"
+    },
+    {
+        id: "boolean", name: "Boolean", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["b: Value"], outputs: ["b: Boolean"],
+        logik: "Verarbeitet Wahrheitswerte (True / False) für Logik und Filter.", python: "flag = bool(wert)", fehler: "None"
+    },
+    {
+        id: "curve_param", name: "Curve", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["c: Curve"], outputs: ["c: Curve"],
+        logik: "Hält oder leitet Kurven-Geometrie weiter.", python: "kurve = crv_in", fehler: "None"
+    },
+    {
+        id: "surface_param", name: "Surface", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["s: Surface"], outputs: ["s: Surface"],
+        logik: "Hält oder leitet Flächen-Geometrie weiter.", python: "flaeche = srf_in", fehler: "None"
+    },
+    {
+        id: "brep_param", name: "Brep", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["b: Brep"], outputs: ["b: Brep"],
+        logik: "Hält oder leitet Volumen-/Brep-Geometrie weiter.", python: "brep = brep_in", fehler: "None"
+    },
+    {
+        id: "geometry_param", name: "Geometry", kategorie: "Params", kategorieFarbe: "bg-zinc-600",
+        inputs: ["g: Geometry"], outputs: ["g: Geometry"],
+        logik: "Allgemeiner Geometrie-Container für beliebige Objekte.", python: "geom = geom_in", fehler: "None"
     },
 
     // 2. MATH (Mathematik & Logik)
@@ -53,44 +93,140 @@ const bausteinBibliothek = [
         logik: "Addiert zwei numerische Werte miteinander.", python: "ergebnis = a + b", fehler: "None"
     },
     {
-        id: "multiplication", name: "Multiplication (×)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
-        inputs: ["a: A", "b: B"], outputs: ["res: A × B"],
-        logik: "Multipliziert zwei Werte (z.B. für Skalierungen).", python: "ergebnis = a * b", fehler: "None"
-    },
-    {
         id: "subtraction", name: "Subtraction (-)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
         inputs: ["a: A", "b: B"], outputs: ["res: A - B"],
         logik: "Subtrahiert Wert B von Wert A.", python: "ergebnis = a - b", fehler: "None"
+    },
+    {
+        id: "multiplication", name: "Multiplication (×)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["a: A", "b: B"], outputs: ["res: A × B"],
+        logik: "Multipliziert zwei Werte miteinander.", python: "ergebnis = a * b", fehler: "None"
     },
     {
         id: "division", name: "Division (÷)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
         inputs: ["a: A", "b: B"], outputs: ["res: A ÷ B"],
         logik: "Teilt Wert A durch Wert B.", python: "ergebnis = a / b", fehler: "Division by zero"
     },
+    {
+        id: "negative", name: "Negative (-x)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["x: Number"], outputs: ["res: -x"],
+        logik: "Kehrt das Vorzeichen einer Zahl um.", python: "neg = -x", fehler: "None"
+    },
+    {
+        id: "abs", name: "Absolute (|x|)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["x: Number"], outputs: ["res: |x|"],
+        logik: "Gibt den Absolutwert (Betrag) einer Zahl aus.", python: "betrag = abs(x)", fehler: "None"
+    },
+    {
+        id: "power", name: "Power (x^y)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["x: Base", "y: Exponent"], outputs: ["res: x^y"],
+        logik: "Potenziert Basis x mit Exponent y.", python: "potenz = x ** y", fehler: "None"
+    },
+    {
+        id: "sqrt", name: "Square Root (√x)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["x: Number"], outputs: ["res: √x"],
+        logik: "Berechnet die Quadratwurzel einer nicht-negativen Zahl.", python: "wurzel = math.sqrt(x)", fehler: "Negative input"
+    },
+    {
+        id: "modulo", name: "Modulus (A % B)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["a: A", "b: B"], outputs: ["res: A % B"],
+        logik: "Gibt den Divisionsrest bei Teilung von A durch B aus.", python: "rest = a % b", fehler: "Division by zero"
+    },
+    {
+        id: "min_val", name: "Minimum (Min)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["a: A", "b: B"], outputs: ["min: Min(A,B)"],
+        logik: "Gibt den kleineren von zwei Werten aus.", python: "kleiner = min(a, b)", fehler: "None"
+    },
+    {
+        id: "max_val", name: "Maximum (Max)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["a: A", "b: B"], outputs: ["max: Max(A,B)"],
+        logik: "Gibt den größeren von zwei Werten aus.", python: "groesser = max(a, b)", fehler: "None"
+    },
+    {
+        id: "larger_than", name: "Larger Than (A > B)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["a: A", "b: B"], outputs: ["r: A > B"],
+        logik: "Prüft, ob Wert A größer als Wert B ist.", python: "ist_groesser = a > b", fehler: "None"
+    },
+    {
+        id: "smaller_than", name: "Smaller Than (A < B)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["a: A", "b: B"], outputs: ["r: A < B"],
+        logik: "Prüft, ob Wert A kleiner als Wert B ist.", python: "ist_kleiner = a < b", fehler: "None"
+    },
+    {
+        id: "equality", name: "Equality (A == B)", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["a: A", "b: B"], outputs: ["r: A == B"],
+        logik: "Prüft, ob Wert A gleich Wert B ist.", python: "ist_gleich = (a == b)", fehler: "None"
+    },
+    {
+        id: "remap", name: "Remap Numbers", kategorie: "Math", kategorieFarbe: "bg-purple-600",
+        inputs: ["v: Value", "minA: Source Min", "maxA: Source Max", "minB: Target Min", "maxB: Target Max"],
+        outputs: ["r: Mapped"],
+        logik: "Überträgt einen Wert linear aus einem Quellbereich in einen Zielbereich.", python: "mapped = remap(v, minA, maxA, minB, maxB)", fehler: "Invalid domain"
+    },
 
-    // 3. VECTOR (Vektoren & Richtung)
+    // 3. VECTOR (Vektoren, Ebenen & Punkte)
     {
         id: "vector_xyz", name: "Vector XYZ", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
         inputs: ["x: X", "y: Y", "z: Z"], outputs: ["v: Vector"],
-        logik: "Erzeugt einen Richtungswektor aus X-, Y- und Z-Komponenten.", python: "vektor = rs.VectorCreate([0,0,0], [x,y,z])", fehler: "None"
+        logik: "Erzeugt einen Vektor aus X-, Y- und Z-Komponenten.", python: "vektor = [x, y, z]", fehler: "None"
     },
     {
         id: "unit_x", name: "Unit X", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
         inputs: ["F: Factor"], outputs: ["V: Vector"],
-        logik: "Erzeugt einen Einheitsvektor entlang der X-Achse skaliert mit F.", python: "vektor = rs.VectorScale([1,0,0], faktor)", fehler: "None"
+        logik: "Erzeugt einen Vektor entlang der X-Achse skaliert mit F.", python: "vec_x = VectorX(F)", fehler: "None"
     },
     {
         id: "unit_y", name: "Unit Y", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
         inputs: ["F: Factor"], outputs: ["V: Vector"],
-        logik: "Erzeugt einen Einheitsvektor entlang der Y-Achse skaliert mit F.", python: "vektor = rs.VectorScale([0,1,0], faktor)", fehler: "None"
+        logik: "Erzeugt einen Vektor entlang der Y-Achse skaliert mit F.", python: "vec_y = VectorY(F)", fehler: "None"
     },
     {
         id: "unit_z", name: "Unit Z", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
         inputs: ["F: Factor"], outputs: ["V: Vector"],
-        logik: "Erzeugt einen Einheitsvektor entlang der Z-Achse (z.B. für Höhen-Extrusionen).", python: "vektor = rs.VectorScale([0,0,1], faktor)", fehler: "None"
+        logik: "Erzeugt einen Vektor entlang der Z-Achse (z. B. für Wandhöhen).", python: "vec_z = VectorZ(F)", fehler: "None"
+    },
+    {
+        id: "vector_2pt", name: "Vector 2Pt", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["A: Point A", "B: Point B"], outputs: ["V: Vector", "L: Length"],
+        logik: "Erzeugt den Richtungsvektor und die Distanz zwischen zwei Punkten.", python: "vec = B - A", fehler: "None"
+    },
+    {
+        id: "amplitude", name: "Amplitude", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["v: Vector", "a: Amplitude"], outputs: ["v: Vector"],
+        logik: "Skaliert einen Vektor exakt auf die angegebene Länge (Amplitude).", python: "vec_amp = set_length(v, a)", fehler: "None"
+    },
+    {
+        id: "reverse_vec", name: "Reverse", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["v: Vector"], outputs: ["r: Reversed"],
+        logik: "Kehrt die Richtung eines Vektors um.", python: "vec_rev = -v", fehler: "None"
+    },
+    {
+        id: "xy_plane", name: "XY Plane", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["o: Origin"], outputs: ["p: Plane"],
+        logik: "Erzeugt eine horizontale XY-Ebene am Ursprungspunkt.", python: "plane_xy = PlaneXY(o)", fehler: "None"
+    },
+    {
+        id: "xz_plane", name: "XZ Plane", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["o: Origin"], outputs: ["p: Plane"],
+        logik: "Erzeugt eine vertikale XZ-Ebene am Ursprungspunkt.", python: "plane_xz = PlaneXZ(o)", fehler: "None"
+    },
+    {
+        id: "yz_plane", name: "YZ Plane", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["o: Origin"], outputs: ["p: Plane"],
+        logik: "Erzeugt eine vertikale YZ-Ebene am Ursprungspunkt.", python: "plane_yz = PlaneYZ(o)", fehler: "None"
+    },
+    {
+        id: "construct_point", name: "Construct Point", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["x: X", "y: Y", "z: Z"], outputs: ["pt: Point"],
+        logik: "Baut einen Punkt aus X-, Y- und Z-Werten (Standardwerte 0).", python: "pt = Point3d(x, y, z)", fehler: "None"
+    },
+    {
+        id: "deconstruct_point", name: "Deconstruct", kategorie: "Vector", kategorieFarbe: "bg-teal-600",
+        inputs: ["pt: Point"], outputs: ["x: X", "y: Y", "z: Z"],
+        logik: "Zerlegt einen Punkt in seine X-, Y- und Z-Koordinaten.", python: "x, y, z = pt.X, pt.Y, pt.Z", fehler: "None"
     },
 
-    // 4. SETS (Listen & Datenstrukturen)
+    // 4. SETS (Listen, Reihenfolgen & Data Trees)
     {
         id: "merge", name: "Merge", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
         inputs: ["data 1: Input", "data 2: Input"], outputs: ["data: Merged List"],
@@ -99,53 +235,165 @@ const bausteinBibliothek = [
     {
         id: "graft", name: "Graft Tree", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
         inputs: ["x: Tree / List"], outputs: ["x: Grafts Tree"],
-        logik: "Fügt eine neue Ast-Ebene in den Datenbaum ein.", python: "zweig = [ [item] for item in liste ]", fehler: "Data matching failed"
+        logik: "Platziert jedes Element in einen eigenen Ast des Datenbaums.", python: "zweig = [[item] for item in liste]", fehler: "Data matching failed"
     },
     {
         id: "flatten", name: "Flatten Tree", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
         inputs: ["x: Tree"], outputs: ["x: Flattens Tree"],
-        logik: "Entfernt alle Ast-Ebenen und macht aus dem Baum eine flache Liste.", python: "flach = [item for sublist in baum for item in sublist]", fehler: "None"
+        logik: "Führt alle Zweige eines Datenbaums zu einer flachen Liste zusammen.", python: "flach = [item for b in baum for item in b]", fehler: "None"
     },
     {
         id: "listitem", name: "List Item", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
         inputs: ["L: List", "i: Index"], outputs: ["item: Item"],
-        logik: "Filtert ein spezifisches Element anhand seines Indexes aus einer Liste.", python: "element = liste[index]", fehler: "Index out of range"
+        logik: "Wählt ein Element anhand seines Indexes aus einer Liste.", python: "element = liste[index]", fehler: "Index out of range"
+    },
+    {
+        id: "list_length", name: "List Length", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["L: List"], outputs: ["n: Length"],
+        logik: "Gibt die Anzahl der Elemente in der Liste aus.", python: "anzahl = len(liste)", fehler: "None"
+    },
+    {
+        id: "reverse_list", name: "Reverse List", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["L: List"], outputs: ["r: Reversed"],
+        logik: "Kehrt die Reihenfolge der Elemente in einer Liste um.", python: "umgekehrt = list(reversed(liste))", fehler: "None"
+    },
+    {
+        id: "series", name: "Series", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["s: Start", "n: Step", "c: Count"], outputs: ["s: Series"],
+        logik: "Erzeugt eine arithmetische Zahlenreihe ab Start mit Schrittweite n.", python: "reihe = [s + i*n for i in range(c)]", fehler: "None"
+    },
+    {
+        id: "range", name: "Range", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["min: Domain Min", "max: Domain Max", "n: Steps"], outputs: ["r: Range"],
+        logik: "Teilt einen Bereich [min..max] in n gleichmäßige Schritte.", python: "werte = linspace(min, max, n)", fehler: "None"
+    },
+    {
+        id: "repeat_data", name: "Repeat Data", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["d: Data", "l: Length"], outputs: ["d: Repeated"],
+        logik: "Wiederholt Daten, bis die gewünschte Länge erreicht ist.", python: "wiederholt = repeat_to_len(d, l)", fehler: "None"
+    },
+    {
+        id: "cull_index", name: "Cull Index", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["L: List", "i: Index"], outputs: ["L: Culled List"],
+        logik: "Entfernt gezielt das Element an Position i aus der Liste.", python: "gefiltert = [x for idx, x in enumerate(L) if idx != i]", fehler: "None"
+    },
+    {
+        id: "dispatch", name: "Dispatch", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["L: List", "p: Pattern"], outputs: ["A: True List", "B: False List"],
+        logik: "Teilt eine Liste anhand eines True/False-Musters in zwei Listen auf.", python: "a, b = dispatch(L, p)", fehler: "None"
+    },
+    {
+        id: "shift_list", name: "Shift List", kategorie: "Sets", kategorieFarbe: "bg-sky-600",
+        inputs: ["L: List", "s: Shift"], outputs: ["L: Shifted"],
+        logik: "Verschiebt Listenelemente um s Schritte nach vorne oder hinten.", python: "verschoben = shift(L, s)", fehler: "None"
     },
 
-    // 5. CURVE (Kurven & Geometrie)
+    // 5. CURVE (Kurven, Linien, Kreise & Rechtecke)
     {
-        id: "curve", name: "Curve", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
-        inputs: ["p1: Start", "p2: End"], outputs: ["crv: Curve"],
-        logik: "Erzeugt eine lineare Kurve zwischen zwei Punkten.", python: "kurve = rs.AddLine(p1, p2)", fehler: "None"
+        id: "curve", name: "Line", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
+        inputs: ["a: Start Point", "b: End Point"], outputs: ["l: Line"],
+        logik: "Erzeugt eine gerade Linie zwischen Punkt A und Punkt B.", python: "linie = Line(a, b)", fehler: "None"
+    },
+    {
+        id: "line_sdl", name: "Line SDL", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
+        inputs: ["s: Start", "d: Direction", "l: Length"], outputs: ["l: Line"],
+        logik: "Erzeugt eine Linie ab Startpunkt in Richtung d mit Länge l.", python: "linie = LineSDL(s, d, l)", fehler: "None"
+    },
+    {
+        id: "rectangle", name: "Rectangle", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
+        inputs: ["p: Plane/Origin", "x: X Size", "y: Y Size"], outputs: ["r: Rectangle", "p: Perimeter"],
+        logik: "Erzeugt ein geschlossenes Rechteck (z. B. Wandprofil oder Fensteröffnung).", python: "rect = Rectangle(w=x, h=y)", fehler: "None"
     },
     {
         id: "circle", name: "Circle", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
-        inputs: ["p: Plane/Center", "r: Radius"], outputs: ["c: Circle"],
-        logik: "Erzeugt einen Kreis mit einem bestimmten Radius um einen Punkt.", python: "kreis = rs.AddCircle(p, r)", fehler: "Radius must be greater than zero"
+        inputs: ["p: Center", "r: Radius"], outputs: ["c: Circle"],
+        logik: "Erzeugt einen Kreis um einen Mittelpunkt mit Radius r.", python: "kreis = Circle(p, r)", fehler: "Radius must be greater than zero"
+    },
+    {
+        id: "eval_length", name: "Evaluate Length", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
+        inputs: ["c: Curve/Length", "l: Length/Factor", "n: Normalized"], outputs: ["pt: Point", "t: Parameter"],
+        logik: "Ermittelt den Punkt entlang einer Kurve/Länge bei Position l.", python: "pt = eval_length(c, l, n)", fehler: "None"
     },
     {
         id: "divide", name: "Divide Curve", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
-        inputs: ["C: Curve", "N: Number"], outputs: ["P: Points", "T: Tangents", "L: Length"],
-        logik: "Unterteilt eine Kurve in eine gleichmäßige Anzahl von Segmenten.", python: "punkte = rs.DivideCurve(c, n)", fehler: "Curve cannot be divided"
+        inputs: ["C: Curve/Length", "N: Count"], outputs: ["P: Points", "T: Tangents"],
+        logik: "Unterteilt eine Kurve/Strecke in N gleichmäßige Abschnitte.", python: "punkte = divide_curve(C, N)", fehler: "Curve cannot be divided"
+    },
+    {
+        id: "offset_curve", name: "Offset Curve", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
+        inputs: ["c: Curve/Length", "d: Distance"], outputs: ["c: Offset"],
+        logik: "Versetzt eine Kurve/Kontur um den Abstand d (z. B. Wandstärke/Laibung).", python: "offset = offset_crv(c, d)", fehler: "None"
+    },
+    {
+        id: "join_curves", name: "Join Curves", kategorie: "Curve", kategorieFarbe: "bg-emerald-600",
+        inputs: ["c: Curves"], outputs: ["c: Joined"],
+        logik: "Verbindet aneinanderstoßende Kurven zu einer zusammenhängenden Kurve.", python: "joined = join_curves(c)", fehler: "None"
     },
 
-    // 6. SURFACE (Flächen & Modellierung)
+    // 6. SURFACE (Flächen & Volumenkörper)
+    {
+        id: "boundary_srf", name: "Boundary Surface", kategorie: "Surface", kategorieFarbe: "bg-indigo-600",
+        inputs: ["e: Edges/Curves"], outputs: ["s: Surface"],
+        logik: "Erzeugt eine planare Fläche aus geschlossenen Randkurven (z. B. Rechteck).", python: "srf = BoundarySurface(e)", fehler: "No planar boundary found"
+    },
     {
         id: "loft", name: "Loft", kategorie: "Surface", kategorieFarbe: "bg-indigo-600",
-        inputs: ["C: Curves"], outputs: ["S: Surface"],
-        logik: "Erstellt eine Fläche oder einen Körper durch das Verbinden mehrerer Kurven.", python: "flaeche = rs.AddLoftSrf(kurven)", fehler: "Not enough curves for loft"
+        inputs: ["C: Curves"], outputs: ["S: Loft Surface"],
+        logik: "Spannt eine Fläche über mehrere Profilkurven.", python: "loft = Loft(C)", fehler: "Not enough curves for loft"
+    },
+    {
+        id: "box_2pt", name: "Center Box", kategorie: "Surface", kategorieFarbe: "bg-indigo-600",
+        inputs: ["b: Base/Center", "x: X", "y: Y", "z: Z"], outputs: ["b: Box"],
+        logik: "Erzeugt einen Quader/Box mit Maßen X, Y und Z (z. B. Fenster-Körper).", python: "box = Box(w=x, d=y, h=z)", fehler: "None"
+    },
+    {
+        id: "deconstruct_brep", name: "Deconstruct Brep", kategorie: "Surface", kategorieFarbe: "bg-indigo-600",
+        inputs: ["b: Brep"], outputs: ["f: Faces", "e: Edges", "v: Vertices"],
+        logik: "Zerlegt ein Volumen/Brep in Teilflächen, Kanten und Eckpunkte.", python: "faces, edges, verts = deconstruct(b)", fehler: "None"
     },
 
-    // 7. TRANSFORMATION (Verschieben & Extrudieren)
+    // 7. TRANSFORM (Verschieben, Extrudieren, Spiegeln, Skalieren)
     {
-        id: "move", name: "Move", kategorie: "Transformation", kategorieFarbe: "bg-amber-600",
-        inputs: ["g: Geometry", "v: Vector"], outputs: ["g: Moved Geom"],
-        logik: "Verschiebt Geometrie anhand eines Vektors.", python: "neues_objekt = rs.MoveObject(g, v)", fehler: "Data matching failed"
+        id: "move", name: "Move", kategorie: "Transform", kategorieFarbe: "bg-amber-600",
+        inputs: ["g: Geometry", "t: Motion Vector"], outputs: ["g: Moved Geom"],
+        logik: "Verschiebt Geometrie anhand eines Bewegungsvektors.", python: "moved = Move(g, t)", fehler: "Data matching failed"
     },
     {
-        id: "extrude", name: "Extrude", kategorie: "Transformation", kategorieFarbe: "bg-amber-600",
-        inputs: ["c: Curve", "v: Vector"], outputs: ["s: Surface/Solid"],
-        logik: "Zieht eine Kurve entlang eines Vektors hoch.", python: "volumen = rs.ExtrudeCurveStraight(c, p_start, p_end)", fehler: "1 item collected, but 0 expected"
+        id: "extrude", name: "Extrude", kategorie: "Transform", kategorieFarbe: "bg-amber-600",
+        inputs: ["b: Base/Profile", "d: Direction/Vector"], outputs: ["e: Extrusion"],
+        logik: "Extrudiert Kurven, Profile oder Flächen entlang eines Vektors.", python: "ext = Extrude(b, d)", fehler: "1 item collected, but 0 expected"
+    },
+    {
+        id: "rotate", name: "Rotate", kategorie: "Transform", kategorieFarbe: "bg-amber-600",
+        inputs: ["g: Geometry", "a: Angle (deg)"], outputs: ["g: Rotated"],
+        logik: "Dreht Geometrie um den angegebenen Winkel.", python: "rot = Rotate(g, a)", fehler: "None"
+    },
+    {
+        id: "scale", name: "Scale", kategorie: "Transform", kategorieFarbe: "bg-amber-600",
+        inputs: ["g: Geometry", "f: Factor"], outputs: ["g: Scaled"],
+        logik: "Skaliert Geometrie proportional mit dem Faktor f.", python: "scl = Scale(g, f)", fehler: "None"
+    },
+    {
+        id: "mirror", name: "Mirror", kategorie: "Transform", kategorieFarbe: "bg-amber-600",
+        inputs: ["g: Geometry", "p: Plane"], outputs: ["g: Mirrored", "m: Mirror"],
+        logik: "Spiegelt Geometrie an einer Ebene.", python: "mir = Mirror(g, p)", fehler: "None"
+    },
+
+    // 8. INTERSECT (Boolesche Operationen & Durchbrüche)
+    {
+        id: "solid_diff", name: "Solid Difference", kategorie: "Intersect", kategorieFarbe: "bg-rose-600",
+        inputs: ["a: Breps A (Target)", "b: Breps B (Cutters)"], outputs: ["r: Result"],
+        logik: "Zieht Schnittkörper B (z. B. Fensteröffnung) von Volumen A (Wand) ab.", python: "diff = SolidDifference(A, B)", fehler: "Boolean failed"
+    },
+    {
+        id: "solid_union", name: "Solid Union", kategorie: "Intersect", kategorieFarbe: "bg-rose-600",
+        inputs: ["b: Breps"], outputs: ["r: Union"],
+        logik: "Vereinigt mehrere Volumenkörper zu einem gemeinsamen Körper.", python: "union = SolidUnion(b)", fehler: "Boolean failed"
+    },
+    {
+        id: "region_diff", name: "Region Difference", kategorie: "Intersect", kategorieFarbe: "bg-rose-600",
+        inputs: ["a: Curve A", "b: Curve B"], outputs: ["r: Difference"],
+        logik: "Bildet die 2D-Differenz zwischen geschlossenen Kurven/Regionen.", python: "reg_diff = RegionDifference(A, B)", fehler: "None"
     }
 ];
 
@@ -520,6 +768,178 @@ function evaluiereNetzwerk() {
                             nodeOutputs[outKey] = { branches: [] };
                         }
                     }
+                }
+            }
+            // --- ERWEITERTE GRASSHOPPER-BAUSTEINE ---
+            if (node.id === "panel") {
+                const outKey = `${nodeIdx}-0`;
+                const tree = normalisiereTree(nodeInputs[`${nodeIdx}-0`]);
+                const items = tree.branches.flatMap(b => b.items);
+                node.python = `panel = ${JSON.stringify(items)}`;
+                nodeOutputs[outKey] = tree;
+            } else if (node.id === "integer") {
+                const outKey = `${nodeIdx}-0`;
+                const val = Math.trunc(extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 0));
+                node.python = `int_val = ${val}`;
+                nodeOutputs[outKey] = val;
+            } else if (node.id === "number") {
+                const outKey = `${nodeIdx}-0`;
+                const val = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 0);
+                node.python = `num_val = ${val}`;
+                nodeOutputs[outKey] = val;
+            } else if (node.id === "boolean") {
+                const outKey = `${nodeIdx}-0`;
+                const raw = nodeInputs[`${nodeIdx}-0`];
+                const flag = Boolean(typeof raw === "object" && raw !== null ? extrahiereZahl(raw, 0) : raw);
+                node.python = `bool_val = ${flag}`;
+                nodeOutputs[outKey] = flag;
+            } else if (["negative", "abs", "power", "sqrt", "modulo", "min_val", "max_val", "larger_than", "smaller_than", "equality", "remap"].includes(node.id)) {
+                const outKey = `${nodeIdx}-0`;
+                const a = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 0);
+                const b = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 0);
+                let res = 0;
+
+                if (node.id === "negative") {
+                    res = -a;
+                    node.python = `neg = ${res}`;
+                } else if (node.id === "abs") {
+                    res = Math.abs(a);
+                    node.python = `abs_val = ${res}`;
+                } else if (node.id === "power") {
+                    res = Math.pow(a, b);
+                    node.python = `pow_val = ${res}`;
+                } else if (node.id === "sqrt") {
+                    if (a < 0) {
+                        node.fehler = "Negative input";
+                        node.python = `sqrt(${a})  # Fehler: negativer Wert`;
+                        nodeOutputs[outKey] = undefined;
+                        nodeFehlerOutputs.add(outKey);
+                    } else {
+                        res = Math.sqrt(a);
+                        node.python = `sqrt_val = ${res.toFixed(4)}`;
+                    }
+                } else if (node.id === "modulo") {
+                    if (b === 0) {
+                        node.fehler = "Division by zero";
+                        node.python = `${a} % ${b}`;
+                        nodeOutputs[outKey] = undefined;
+                        nodeFehlerOutputs.add(outKey);
+                    } else {
+                        res = a % b;
+                        node.python = `mod_val = ${res}`;
+                    }
+                } else if (node.id === "min_val") {
+                    res = Math.min(a, b);
+                    node.python = `min_val = ${res}`;
+                } else if (node.id === "max_val") {
+                    res = Math.max(a, b);
+                    node.python = `max_val = ${res}`;
+                } else if (node.id === "larger_than") {
+                    res = a > b;
+                    node.python = `gt_val = ${res}`;
+                } else if (node.id === "smaller_than") {
+                    res = a < b;
+                    node.python = `lt_val = ${res}`;
+                } else if (node.id === "equality") {
+                    res = a === b;
+                    node.python = `eq_val = ${res}`;
+                } else if (node.id === "remap") {
+                    const minA = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 0);
+                    const maxA = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 100);
+                    const minB = extrahiereZahl(nodeInputs[`${nodeIdx}-3`], 0);
+                    const maxB = extrahiereZahl(nodeInputs[`${nodeIdx}-4`], 1);
+                    if (maxA === minA) {
+                        node.fehler = "Invalid domain";
+                        node.python = `remap  # Domain Min == Max`;
+                        nodeOutputs[outKey] = undefined;
+                        nodeFehlerOutputs.add(outKey);
+                    } else {
+                        res = minB + ((a - minA) / (maxA - minA)) * (maxB - minB);
+                        node.python = `remapped = ${res}`;
+                    }
+                }
+
+                if (node.fehler === "None") {
+                    nodeFehlerOutputs.delete(outKey);
+                    nodeOutputs[outKey] = res;
+                }
+            } else if (["list_length", "reverse_list", "series", "range", "repeat_data", "cull_index", "shift_list"].includes(node.id)) {
+                const outKey = `${nodeIdx}-0`;
+                const tree = normalisiereTree(nodeInputs[`${nodeIdx}-0`]);
+                const items = tree.branches.flatMap(b => b.items);
+
+                if (node.id === "list_length") {
+                    node.python = `len = ${items.length}`;
+                    nodeOutputs[outKey] = items.length;
+                } else if (node.id === "reverse_list") {
+                    const rev = [...items].reverse();
+                    node.python = `rev = ${JSON.stringify(rev)}`;
+                    nodeOutputs[outKey] = normalisiereTree(rev);
+                } else if (node.id === "series") {
+                    const start = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 0);
+                    const stepVal = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 1);
+                    const count = Math.max(0, Math.trunc(extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 5)));
+                    const arr = Array.from({ length: count }, (_, i) => start + i * stepVal);
+                    node.python = `series = ${JSON.stringify(arr)}`;
+                    nodeOutputs[outKey] = normalisiereTree(arr);
+                } else if (node.id === "range") {
+                    const minD = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 0);
+                    const maxD = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 10);
+                    const steps = Math.max(1, Math.trunc(extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 5)));
+                    const arr = Array.from({ length: steps + 1 }, (_, i) => minD + (i / steps) * (maxD - minD));
+                    node.python = `range = ${JSON.stringify(arr)}`;
+                    nodeOutputs[outKey] = normalisiereTree(arr);
+                } else if (node.id === "repeat_data") {
+                    const targetLen = Math.max(0, Math.trunc(extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 4)));
+                    const base = items.length > 0 ? items : [0];
+                    const arr = Array.from({ length: targetLen }, (_, i) => base[i % base.length]);
+                    node.python = `repeated = ${JSON.stringify(arr)}`;
+                    nodeOutputs[outKey] = normalisiereTree(arr);
+                } else if (node.id === "cull_index") {
+                    const delIdx = Math.trunc(extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 0));
+                    const filtered = items.filter((_, idx) => idx !== delIdx);
+                    node.python = `culled = ${JSON.stringify(filtered)}`;
+                    nodeOutputs[outKey] = normalisiereTree(filtered);
+                } else if (node.id === "shift_list") {
+                    const shiftVal = Math.trunc(extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 1));
+                    let shifted = [...items];
+                    if (shifted.length > 0) {
+                        const k = ((shiftVal % shifted.length) + shifted.length) % shifted.length;
+                        shifted = [...shifted.slice(k), ...shifted.slice(0, k)];
+                    }
+                    node.python = `shifted = ${JSON.stringify(shifted)}`;
+                    nodeOutputs[outKey] = normalisiereTree(shifted);
+                }
+            } else if (["eval_length", "offset_curve", "box_2pt", "solid_diff", "solid_union", "region_diff"].includes(node.id)) {
+                const outKey = `${nodeIdx}-0`;
+                if (node.id === "eval_length") {
+                    const lenOrCrv = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 900);
+                    const posVal = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 0.5);
+                    const normalized = Boolean(nodeInputs[`${nodeIdx}-2`]);
+                    const pos = normalized ? lenOrCrv * posVal : posVal;
+                    node.python = `eval_pt = ${pos}  (von ${lenOrCrv})`;
+                    nodeOutputs[outKey] = pos;
+                } else if (node.id === "offset_curve") {
+                    const base = extrahiereZahl(nodeInputs[`${nodeIdx}-0`], 900);
+                    const dist = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 24);
+                    node.python = `offset = ${base} (d=${dist})`;
+                    nodeOutputs[outKey] = { basis: base, offset: dist };
+                } else if (node.id === "box_2pt") {
+                    const w = extrahiereZahl(nodeInputs[`${nodeIdx}-1`], 300);
+                    const d = extrahiereZahl(nodeInputs[`${nodeIdx}-2`], 40);
+                    const h = extrahiereZahl(nodeInputs[`${nodeIdx}-3`], 120);
+                    node.python = `box = Box(w=${w}, d=${d}, h=${h})`;
+                    nodeOutputs[outKey] = { width: w, depth: d, height: h };
+                } else if (node.id === "solid_diff" || node.id === "region_diff") {
+                    const targetA = nodeInputs[`${nodeIdx}-0`];
+                    const cutterB = nodeInputs[`${nodeIdx}-1`];
+                    node.python = `${node.id}(A=${JSON.stringify(targetA)}, B=${JSON.stringify(cutterB)})`;
+                    nodeOutputs[outKey] = { target: targetA, cutter: cutterB, op: node.id };
+                } else if (node.id === "solid_union") {
+                    const tree = normalisiereTree(nodeInputs[`${nodeIdx}-0`]);
+                    const items = tree.branches.flatMap(b => b.items);
+                    node.python = `union(${JSON.stringify(items)})`;
+                    nodeOutputs[outKey] = tree;
                 }
             }
         });
